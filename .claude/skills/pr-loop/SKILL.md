@@ -72,7 +72,8 @@ if alive, else a fresh one on the same worktree branch). Hard rule inherited
 from CLAUDE.md: **every confirmed HIGH/MEDIUM finding becomes an adversarial
 eval case before it is fixed** — watch it fail, then fix. A finding the
 implementer rejects gets a one-line written reason; the reviewer sees it next
-round. Then → GATE.
+round. After the repair, post one implementer PR comment: per finding id —
+fixed (with the eval case id) or rejected (with the reason). Then → GATE.
 
 **Circuit breaker:** after 3 review rounds without approval, or any
 implementer/reviewer deadlock on a finding, stop and hand the dispute to the
@@ -97,6 +98,19 @@ eval — commit it with the branch):
 ```
 
 Notify the human: task id, PR link, one-line summary. **You do not merge.**
+
+## PR comment identity
+
+Every PR comment is posted by the same `gh` account, so the first line of each
+comment MUST declare the role — this is how the human tracks who said what:
+
+```
+**pr-loop/reviewer — round <N>**      findings table
+**pr-loop/implementer — round <N>**   per-finding: fixed (case id) / rejected (reason)
+**pr-loop/orchestrator**              evidence pack, gate failures, circuit-breaker escalation
+```
+
+One comment per role per round, always tagged, no untagged comments.
 
 ## TODO.md task format
 
