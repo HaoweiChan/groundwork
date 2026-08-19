@@ -1,6 +1,6 @@
 ---
 name: pr-loop
-description: Orchestrated implement → verify → review → repair loop for one TODO.md task, ending in a PR that carries evidence, not chatter. Use when the user says /pr-loop <task-id>, "deliver T<N>", or asks to run a task through the full delivery loop.
+description: Orchestrated implement → verify → review → repair loop for one tasks/TODO.md task, ending in a PR that carries evidence, not chatter. Use when the user says /pr-loop <task-id>, "deliver T<N>", or asks to run a task through the full delivery loop.
 ---
 
 # pr-loop — the delivery state machine
@@ -28,7 +28,7 @@ Role separation is the verification architecture — do not collapse it:
 ## States
 
 ### 1. SPEC
-Read the task block from `TODO.md` (format below). If the spec lacks
+Read the task block from `tasks/TODO.md` (format below). If the spec lacks
 acceptance criteria you can gate on, STOP and ask the human — that is a spec
 problem, not something to improvise past.
 
@@ -112,7 +112,7 @@ comment MUST declare the role — this is how the human tracks who said what:
 
 One comment per role per round, always tagged, no untagged comments.
 
-## TODO.md task format
+## tasks/TODO.md task format
 
 ```markdown
 ## T10 — <title>            [status: todo|in-progress|pr|done]

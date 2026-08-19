@@ -19,7 +19,7 @@ README.md; this file is the working contract.
 ```
 .claude/skills/    domain + process knowledge, loaded on demand
 .claude/agents/    cold-reviewer / eval-adversary / spec-drift / pr-reviewer subagents
-TODO.md            pr-loop task queue (format defined in the pr-loop skill)
+tasks/TODO.md      pr-loop task queue (format defined in the pr-loop skill)
 .claude/hooks/     enforcement — the only layer that can actually block
 .githooks/         pre-commit eval gate (installed via core.hooksPath)
 specs/             ONLY: 000-invariants.md, per-task contracts, decisions/ADR-*.md
@@ -46,7 +46,7 @@ python3 -m evals.run --suite fast --update-baseline   # deliberate baseline move
 2. **Every new failure becomes a case** in `evals/adversarial/` before it is fixed.
    Watch the new case fail first; an eval you've never seen red proves nothing.
 3. **specs/ holds only three kinds of files**: invariants, output contracts, ADRs.
-   No plans in specs/ — the only task file is `TODO.md` at the repo root (the
+   No plans in specs/ — the only task file is `tasks/TODO.md` (the
    pr-loop queue); ad-hoc task lists live in the session.
 4. **No mocked results.** If a live dependency is unreachable, fail loudly; never
    fabricate output to make a run look green.
@@ -62,7 +62,7 @@ python3 -m evals.run --suite fast --update-baseline   # deliberate baseline move
 5. New cases into the eval set → back to 3
 6. Eval gate green → commit
 
-For a full TODO.md task that should end in a PR, run the loop through
+For a full tasks/TODO.md task that should end in a PR, run the loop through
 **/pr-loop <task-id>** instead: one orchestrator session drives
 implement → gate → review → repair with subagents (implementer in a worktree,
 pr-reviewer with fresh context); the human only writes the spec and merges.
