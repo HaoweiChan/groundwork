@@ -112,4 +112,24 @@ failing eval case → implement (invariant hook watching) → cold review
 → findings become adversarial cases → eval gate green → commit
 ```
 
+## Delivery loop (/pr-loop)
+
+For a full task that ends in a PR, the human is not the message broker between
+an implementer session and a reviewer session — an orchestrator session owns
+the state machine:
+
+```
+SPEC → IMPLEMENT → GATE → REVIEW ─ findings → REPAIR → GATE → REVIEW …
+(human)  (subagent,  (eval    (pr-reviewer,        └─ approve → EVIDENCE → HUMAN
+          worktree)   suite)   fresh context)                    (pack)     (merge)
+```
+
+Agents own execution and adversarial review, the eval suite owns objective
+gates, humans retain spec and merge authority. The PR is an **evidence
+ledger**, not a communication bus: one structured findings comment per review
+round, a final evidence pack, and a metrics line per task in
+`evals/report/pr-loop-ledger.jsonl` — so the workflow itself is evaluated
+(review rounds, confirmed vs rejected findings, human interventions).
+Protocol: `.claude/skills/pr-loop/SKILL.md`.
+
 Design rationale for the whole approach: `specs/decisions/ADR-000`.
