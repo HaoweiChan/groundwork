@@ -11,7 +11,7 @@ import re
 import sys
 
 TODO = pathlib.Path(__file__).parent / "TODO.md"
-HEAD = re.compile(r"^#{2,3}\s+(T\d+)\s+—.*\[status:\s*([a-z-]+)\]")
+HEAD = re.compile(r"^#{2,3}\s+([A-Z]+\d+)\s+—.*\[status:\s*([a-z-]+)\]")
 DEPS = re.compile(r"^Depends:\s*(.+)")
 
 
@@ -22,7 +22,7 @@ def parse(text):
             cur = m.group(1)
             tasks[cur] = {"status": m.group(2), "deps": []}
         elif cur and (m := DEPS.match(line)):
-            tasks[cur]["deps"] = re.findall(r"T\d+", m.group(1))
+            tasks[cur]["deps"] = re.findall(r"[A-Z]+\d+", m.group(1))
     return tasks
 
 
@@ -48,11 +48,13 @@ def selftest():
         "### T2 — b [status: todo]\nDepends: T1\n"
         "### T3 — c [status: todo]\nDepends: T2, T9\n"
         "### T4 — d [status: in-progress]\n"
+        "### M8 — e [status: todo]\nDepends: T1\n"
     )
     assert t["T1"]["status"] == "done" and t["T2"]["deps"] == ["T1"]
     assert [d for d in t["T2"]["deps"] if t.get(d, {}).get("status") != "done"] == []
     assert [d for d in t["T3"]["deps"] if t.get(d, {}).get("status") != "done"] == ["T2", "T9"]
     assert t["T4"]["status"] == "in-progress"
+    assert t["M8"]["deps"] == ["T1"]
     print("selftest ok")
 
 

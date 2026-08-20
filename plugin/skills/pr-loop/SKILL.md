@@ -139,7 +139,8 @@ One comment per role per round, always tagged, no untagged comments.
 
 ## tasks/TODO.md format
 
-Three sections, one shared `T<N>` id sequence:
+Three sections, one shared id sequence (`T<N>` by convention; any
+letter-prefix id like `M8` works — legacy milestone ids keep their names):
 
 - `## Queue` — runnable work, in priority order.
 - `## Debt` — findings and overflow logged by pr-loop runs; same block format
