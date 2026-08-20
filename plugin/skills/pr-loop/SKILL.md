@@ -48,11 +48,10 @@ as a task block under `## Debt` in `tasks/TODO.md` (with `Origin:`) and stay
 on spec.
 
 ### 3. GATE (deterministic — you run it, never trust "I ran the tests")
-On the task branch:
-```bash
-python3 -m evals.run --suite invariant   # must be 100%
-python3 -m evals.run --suite fast        # must be ≥ .eval-baseline.json
-```
+On the task branch, run the commands in the repo CLAUDE.md's **`## Gate`**
+section, in order, judged by the pass criteria stated there. No `## Gate`
+section → STOP and ask the human to define one: a delivery loop without an
+objective gate is two agents complimenting each other.
 Fail → back to REPAIR with the raw output. Pass → first time through, push
 the branch and `gh pr create` (body = task block + "evidence pack pending").
 Then REVIEW.
@@ -93,8 +92,8 @@ reviewer chatter reaches the PR.
 ### 5. REPAIR
 Relay the `repair` findings verbatim to the implementer (same subagent via
 SendMessage if alive, else a fresh one on the same worktree branch). Hard
-rule inherited from CLAUDE.md: **every confirmed repair finding becomes an
-adversarial eval case before it is fixed** — watch it fail, then fix. A
+rule: **every confirmed repair finding becomes a failing case in the repo's
+gate suite before it is fixed** — watch it fail, then fix. A
 finding the implementer rejects gets a one-line written reason; the reviewer
 sees it next round. After the repair, post one implementer PR comment: per
 finding id — fixed (with the eval case id) or rejected (with the reason).
@@ -109,14 +108,14 @@ Update the PR body to the evidence pack:
 
 ```markdown
 ## Evidence pack — <task-id>
-**Gate**: invariant 12/12 · fast 44/44 (baseline 42) — run <date>
+**Gate**: <each ## Gate command with its result> — run <date>
 **Review**: N rounds · findings H/M/L: a/b/c · repaired x · rejected y · debt-logged z
-**New eval cases**: <ids added this task>
+**New cases**: <test/eval case ids added this task>
 **Debt logged**: <T-ids created in tasks/TODO.md ## Debt>
 **Verification**: <the one command a human can run to see it work>
 ```
 
-Append one line to `evals/report/pr-loop-ledger.jsonl` (the workflow's own
+Append one line to `tasks/pr-loop-ledger.jsonl` (the workflow's own
 eval — commit it with the branch):
 
 ```json

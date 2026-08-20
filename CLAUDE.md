@@ -9,6 +9,10 @@ project, not to groundwork — replace it when instantiating the template.
 
 ## Toolchain
 
+- **groundwork** plugin (this repo's `plugin/`, self-hosted via
+  `.claude/settings.json`) provides the process layer: pr-loop, the four
+  evidence-only review agents, eval/failure/cost discipline skills,
+  /groundwork-init.
 - **ponytail** plugin is enabled repo-wide via `.claude/settings.json` — laziest
   working solution, stdlib first, shortest diff. Applies to all code here.
 - **graphify** is vendored as a project skill — use `/graphify` for architecture
@@ -18,8 +22,8 @@ project, not to groundwork — replace it when instantiating the template.
 ## Layout
 
 ```
-.claude/skills/    domain + process knowledge, loaded on demand
-.claude/agents/    cold-reviewer / eval-adversary / spec-drift / pr-reviewer subagents
+plugin/            the groundwork plugin — skills (pr-loop, groundwork-init, …) + agents
+.claude/skills/    project-local skills only (domain knowledge, vendored graphify)
 tasks/             TODO.md (Queue / Debt / Done) + ready.py (lists unblocked tasks)
 .claude/hooks/     enforcement — the only layer that can actually block
 .githooks/         pre-commit eval gate (installed via core.hooksPath)
@@ -29,13 +33,22 @@ evals/adversarial/ cases known or designed to break the pipeline
 evals/report/      every run's output, committed to git
 prompts/           AI-collaboration record (auto-dumped raw/ + curated files)
 src/<task>/        implementation + eval_adapter.py per task
+docs/              groundwork.md (process reference) + decisions/GW-* (template's own ADRs)
+```
+
+## Gate
+
+The objective pass/fail for this repo. pr-loop, the hooks, and any reviewer
+run exactly these, in order:
+
+```bash
+python3 -m evals.run --suite invariant   # pass: 100%
+python3 -m evals.run --suite fast        # pass: score ≥ .eval-baseline.json
 ```
 
 ## Commands
 
 ```bash
-python3 -m evals.run --suite fast              # quick gate suite
-python3 -m evals.run --suite invariant         # must-always-hold assertions
 python3 -m evals.run --suite all               # everything, writes report
 python3 -m evals.run --suite fast --update-baseline   # deliberate baseline move
 python3 tasks/ready.py                         # which tasks are unblocked (deps done)
@@ -73,7 +86,7 @@ the gate, or the honesty of a published claim — everything else becomes a
 Debt task, not another round (groundwork GW-002). The PR carries role-tagged structured
 findings and an evidence pack — never agent chatter. Independent tasks
 (`Depends:` satisfied, see `tasks/ready.py`) can run as parallel pr-loop
-sessions. Protocol: `.claude/skills/pr-loop/SKILL.md`.
+sessions. Protocol: `plugin/skills/pr-loop/SKILL.md`.
 
 ## Adding a task
 

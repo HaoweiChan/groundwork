@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "groundwork",
+  "description": "Eval-first process layer for the agent era: pr-loop delivery state machine, evidence-only review agents, eval discipline.",
+  "owner": {
+    "name": "Haowei Chan",
+    "url": "https://github.com/HaoweiChan"
+  },
+  "plugins": [
+    {
+      "name": "groundwork",
+      "description": "pr-loop delivery state machine, four evidence-only review agents, eval/failure/cost discipline skills, and /groundwork-init for adopting groundwork in any repo.",
+      "source": "./plugin",
+      "category": "productivity"
+    }
+  ]
+}

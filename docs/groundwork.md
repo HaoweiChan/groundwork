@@ -88,7 +88,7 @@ Agents own execution and adversarial review, the repo's gate owns objective
 pass/fail, humans retain spec and merge authority. The PR is an **evidence
 ledger**, not a communication bus: one role-tagged structured findings comment
 per review round, a final evidence pack, and a metrics line per task in
-`evals/report/pr-loop-ledger.jsonl` — so the workflow itself is evaluated
+`tasks/pr-loop-ledger.jsonl` — so the workflow itself is evaluated
 (review rounds, repaired vs rejected vs debt-logged findings, human
 interventions).
 
@@ -102,9 +102,14 @@ isolated `task/<id>` worktree branches.
 
 ## Repo map
 
+Skills and agents arrive through the **groundwork plugin** (`plugin/` in the
+groundwork repo, self-hosted marketplace); repo-local `.claude/skills/` and
+`.claude/agents/` hold only project-specific domain knowledge, which overrides
+the plugin on name collision.
+
 ```
-CLAUDE.md            facts layer — working rules, < 150 lines (AGENTS.md symlinks here)
-.claude/settings.json  hooks registration + plugin wiring
+CLAUDE.md            facts layer — working rules incl. the ## Gate section (AGENTS.md symlinks here)
+.claude/settings.json  hooks registration + plugin wiring (groundwork + ponytail)
 .claude/hooks/       post-edit invariant runner · session prompt logger
 .githooks/           pre-commit eval gate (installed via core.hooksPath)
 tasks/               TODO.md (Queue / Debt / Done) + ready.py
