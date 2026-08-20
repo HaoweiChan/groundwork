@@ -1,7 +1,17 @@
-# GW-003 — plugin split: process ships as a plugin, ground stays in the repo
+# GW-003 — process ships as a plugin; ground, state, and enforcement don't
+Status: accepted · 2026-08-20 · Amends: GW-001, GW-002
 
-**Status**: accepted · 2026-08-20
-**Extends**: GW-001, GW-002
+**Ruling**: pr-loop, the four evidence-only agents, and eval/failure/cost
+skills ship centrally as the groundwork plugin; the repo keeps the eval
+harness, `specs/`, `tasks/`, CLAUDE.md, and all enforcement — hooks never ship as plugin content, and pr-loop runs the repo's declared `## Gate` section.
+**Because**: clone-and-copy propagation drifted immediately (byte-copied
+skills diverged, ADR numbering collided) and gave brownfield repos no
+adoption path at all.
+**Enforced by**: `.claude/settings.json` (plugin wiring) — advisory beyond
+that; `/groundwork-init` is additive/idempotent, never touches README,
+tests, or `specs/decisions/`.
+
+---
 
 ## Context
 

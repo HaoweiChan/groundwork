@@ -59,7 +59,9 @@ section, in order, judged by the pass criteria stated there. No `## Gate`
 section → STOP and ask the human to define one: a delivery loop without an
 objective gate is two agents complimenting each other.
 Fail → back to REPAIR with the raw output. Pass → first time through, push
-the branch and `gh pr create` (body = task block + "evidence pack pending").
+the branch and `gh pr create`, body = the rolling evidence pack (template
+under **PR body**, below) seeded with Round 0 = gate only, Decision: in
+repair — never a placeholder like "evidence pack pending".
 Then REVIEW.
 
 ### 4. REVIEW
@@ -82,15 +84,31 @@ if it is HIGH/MEDIUM **and** at least one of:
 - it violates the task's acceptance criteria,
 - it turns the gate red,
 - it makes a published number or claim dishonest — a metric that counts
-  wrong, a committed artifact a reader would take as verified-correct.
+  wrong, a committed artifact a reader would take as verified-correct, or
+  repair-round history / superseded numbers / per-round narrative bled into
+  a README, analysis report, or other document of record (that audit trail
+  belongs only in `tasks/reviews/`, never in a final document).
 
 Everything else — **regardless of severity** — goes to `## Debt` in
 `tasks/TODO.md` with `Origin: PR #<n> <finding-id>` and the finding's
 evidence carried verbatim. Severity says how bad; scope says whose PR.
 
-Post **one PR comment per round**: the round's findings table, each row
-marked `repair` or `debt`. That comment is the audit record — no other
-reviewer chatter reaches the PR.
+Findings land in two places, never one — a full machine trace and a bounded
+human summary. Never write full findings prose into a PR comment.
+
+**Artifact (always, full detail).** Commit `tasks/reviews/pr<N>-r<K>.json` on
+the branch: the reviewer's findings array in the schema above, unchanged,
+plus the orchestrator's `route` tag per finding (`repair`|`debt`) and the
+round's `result` (`APPROVED`|`REQUEST_CHANGES`). This is the reproducible
+trace — every claim in the comment below must trace back to a line in it.
+
+**Comment (bounded, exactly one, ≤40 lines):** `**pr-loop/reviewer — round
+<N>**` — result, H/M/L counts, blocking findings as `id — one-line claim`
+only (no evidence/repro prose), non-blocking ids listed flat, the gate line,
+and the artifact path. Nothing else reaches the PR as reviewer chatter.
+
+Then update the PR body (the rolling evidence pack — see **PR body**, below)
+with this round's line.
 
 - Any `repair` finding → REPAIR.
 - None (only `debt`/LOW) → reviewer states APPROVED → EVIDENCE.
@@ -99,27 +117,43 @@ reviewer chatter reaches the PR.
 Relay the `repair` findings verbatim to the implementer (same subagent via
 SendMessage if alive, else a fresh one on the same worktree branch). Hard
 rule: **every confirmed repair finding becomes a failing case in the repo's
-gate suite before it is fixed** — watch it fail, then fix. A
-finding the implementer rejects gets a one-line written reason; the reviewer
-sees it next round. After the repair, post one implementer PR comment: per
-finding id — fixed (with the eval case id) or rejected (with the reason).
-Then → GATE.
+gate suite before it is fixed** — watch it fail, then fix. A finding the
+implementer rejects gets a one-line written reason; the reviewer sees it next
+round.
+
+Resolutions land the same split way:
+
+**Artifact (always, full detail).** Commit
+`tasks/reviews/pr<N>-r<K>-resolution.json` — one entry per finding id:
+`fixed` (+ the eval/case id that now covers it), `rejected` (+ the one-line
+reason), or `debt` (+ the T-id it became).
+
+**Comment (bounded, exactly one, ≤40 lines):** `**pr-loop/implementer —
+round <N>**` — resolved/rejected/debt-logged counts, up to 5 bullets of
+material changes, one verification line (the command that shows the fix),
+and the resolution artifact path.
+
+Then → GATE, which updates the PR body with the round's result line.
 
 **Circuit breaker:** after 3 review rounds without approval, or any
-implementer/reviewer deadlock on a finding, stop and hand the dispute to the
-human with both positions stated. Do not loop forever.
+implementer/reviewer deadlock on a finding, stop — do not loop forever. Post
+one escalation comment (`**pr-loop/orchestrator — circuit breaker**`, ≤40
+lines, one compact block): breaker state · open H/M/L counts · the one
+blocker finding (id + one line + the key number — the single finding
+actually stalling merge, not a list) · structural findings if any (one line
+each) · Options A (one more bounded round) / B (merge with the finding
+logged as named debt) · a recommendation. The human must be able to decide
+from this block alone, with no other comment or artifact read required —
+relay the same block to the human directly, don't just post and wait.
 
 ### 6. EVIDENCE
-Update the PR body to the evidence pack:
-
-```markdown
-## Evidence pack — <task-id>
-**Gate**: <each ## Gate command with its result> — run <date>
-**Review**: N rounds · findings H/M/L: a/b/c · repaired x · rejected y · debt-logged z
-**New cases**: <test/eval case ids added this task>
-**Debt logged**: <T-ids created in tasks/TODO.md ## Debt>
-**Verification**: <the one command a human can run to see it work>
-```
+Reviewer approved. Finalize the rolling PR body: set **Decision** to
+`awaiting human`, drop resolved findings from "Important failures
+discovered" (it lists current material findings, not history), confirm the
+gate line reflects the last green run, and fill in **Verification** (the
+one command a human can run to see it work) and **Debt logged** (T-ids
+created this task, or `none`) — both were live-updatable earlier but must
+be correct and present by this state.
 
 Append one line to `tasks/pr-loop-ledger.jsonl` (the workflow's own
 eval — commit it with the branch):
@@ -130,18 +164,55 @@ eval — commit it with the branch):
 
 Notify the human: task id, PR link, one-line summary. **You do not merge.**
 
+## PR body — rolling evidence pack
+
+The PR body is never a communication surface and never stale — the
+orchestrator rewrites it after every gate run and every review, starting at
+PR creation. Fixed template:
+
+```markdown
+## <task-id> — <goal, one line>
+<goal, second line — what "done" means>
+
+### Rounds
+Round 1: 2 HIGH / 1 MEDIUM / 0 LOW → repaired 3, rejected 0, debt 0
+Round 2: 1 HIGH / 4 MEDIUM / 3 LOW → repaired 7, rejected 0, debt 1
+
+### Important failures discovered
+1. <one line, only material ones — in-scope HIGH/MEDIUM findings>
+2. <one line>
+
+**Gate**: pass — 2026-08-20
+**Full trace**: tasks/reviews/pr<N>-r*.json
+**Verification**: <the one command a human can run to see it work>
+**Debt logged**: <T-ids created this task, or none>
+**Decision**: in repair
+```
+
+Rounds accumulate (append, never rewrite); "Important failures discovered"
+is the *current* set of material findings, not a log — a repaired finding
+drops off the list rather than staying struck through. **Decision** is one
+of `in repair` (loop active, more rounds possible), `awaiting human`
+(reviewer approved, nothing left to automate), or `merged` (terminal).
+Nothing else lives in the body: no per-round narrative, no repair-history
+prose, no superseded numbers. That is the audit trail, and it lives in
+`tasks/reviews/`, never in the document a human reads to decide.
+
 ## PR comment identity
 
-Every PR comment is posted by the same `gh` account, so the first line of each
-comment MUST declare the role — this is how the human tracks who said what:
+Every PR comment is posted by the same `gh` account, so the first line of
+each comment MUST declare the role — this is how the human tracks who said
+what:
 
 ```
-**pr-loop/reviewer — round <N>**      findings table (each row: repair | debt)
-**pr-loop/implementer — round <N>**   per-finding: fixed (case id) / rejected (reason)
-**pr-loop/orchestrator**              evidence pack, gate failures, circuit-breaker escalation
+**pr-loop/reviewer — round <N>**      bounded summary, ≤40 lines → tasks/reviews/pr<N>-r<K>.json
+**pr-loop/implementer — round <N>**   bounded resolution, ≤40 lines → tasks/reviews/pr<N>-r<K>-resolution.json
+**pr-loop/orchestrator — circuit breaker**   escalation block only — every other orchestrator update is a PR body edit, not a comment
 ```
 
-One comment per role per round, always tagged, no untagged comments.
+One comment per role per round, always tagged, always ≤40 lines. The PR body
+carries the rolling evidence pack; comments never repeat what the body or the
+artifacts already say.
 
 ## tasks/TODO.md format
 

@@ -138,6 +138,21 @@ docs/groundwork.md   this file — the groundwork process reference
   projects is skills, agents, and scaffold files; a `.groundwork-version`
   file records the upstream commit they came from.
 
+## ADR format
+
+Every ADR — project `specs/decisions/ADR-*.md` and groundwork's own
+`docs/decisions/GW-*.md` alike — carries a mandatory 3-line header right
+after the title/status line: **Ruling** (what is now true, ≤3 lines,
+imperative), **Because** (the core reason, one line), **Enforced by** (case
+ids / hook / code location, or `advisory — <where it binds>`). A `---` fold
+line follows, then unbounded Context/Evidence/Alternatives/Consequences —
+most readers need only the header; the fold is for the reader who needs the
+story. Each repo also keeps `specs/decisions/INDEX.md`, one line per ADR
+(`ADR-NNN — <ruling sentence> — enforced by <x>`) — the "what are the current
+rules" digest. A repo with an eval harness adds an invariant-suite case
+checking every ADR has the header and INDEX.md has exactly one line per ADR
+file — see groundwork GW-006.
+
 ## If you are an agent entering a groundwork repo
 
 1. Read `CLAUDE.md` in full — it is short on purpose.

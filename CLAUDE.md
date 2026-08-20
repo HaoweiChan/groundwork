@@ -27,7 +27,7 @@ plugin/            the groundwork plugin — skills (pr-loop, groundwork-init, �
 tasks/             TODO.md (Queue / Debt — the working set) + DONE.md (one-line index of merged work)
 .claude/hooks/     enforcement — the only layer that can actually block
 .githooks/         pre-commit eval gate (installed via core.hooksPath)
-specs/             ONLY: 000-invariants.md, per-task contracts, decisions/ADR-*.md
+specs/             ONLY: 000-invariants.md, per-task contracts, decisions/ADR-*.md + decisions/INDEX.md
 evals/golden/      hand-labeled cases (JSON, one per case)
 evals/adversarial/ cases known or designed to break the pipeline
 evals/report/      every run's output, committed to git
@@ -60,7 +60,9 @@ python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/ready.py   # unblocked task
    make the pre-commit gate pass. A baseline move is a decision — record why in an ADR.
 2. **Every new failure becomes a case** in `evals/adversarial/` before it is fixed.
    Watch the new case fail first; an eval you've never seen red proves nothing.
-3. **specs/ holds only three kinds of files**: invariants, output contracts, ADRs.
+3. **specs/ holds only three kinds of files**: invariants, output contracts, ADRs
+   (each ADR gets the 3-line header + `---` fold, groundwork GW-006; the ADR
+   digest is `specs/decisions/INDEX.md`, one line per ADR).
    No plans in specs/ — task state lives only in `tasks/` (TODO.md working
    set + DONE.md index); ad-hoc task lists live in the session.
 4. **No mocked results.** If a live dependency is unreachable, fail loudly; never

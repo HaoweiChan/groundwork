@@ -1,6 +1,16 @@
-# GW-001 — pr-loop: delivery as a state machine, PR as evidence ledger
+# GW-001 — delivery runs as an orchestrated state machine, not human relay
+Status: accepted · 2026-08-19
 
-**Status**: accepted · 2026-08-19
+**Ruling**: One orchestrator session (`/pr-loop <task-id>`) drives
+IMPLEMENT → GATE → REVIEW → REPAIR → EVIDENCE via role-separated subagents;
+the human only writes the spec and merges — the PR records outcomes, never agent chatter.
+**Because**: a human relaying every step between two independently-driven
+sessions sat inside a deterministic routing loop, and the PR filled with
+fine-grained agent-to-agent chatter — high observability, low signal.
+**Enforced by**: `plugin/skills/pr-loop/SKILL.md` (advisory — no hook drives
+subagent spawning; the eval gate inside GATE is the one blocking check).
+
+---
 
 ## Context
 

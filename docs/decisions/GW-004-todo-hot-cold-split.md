@@ -1,7 +1,16 @@
-# GW-004 — TODO.md is the working set; tools live in the plugin
+# GW-004 — TODO.md holds only the working set; merged work moves to DONE.md
+Status: accepted · 2026-08-20 · Amends: GW-002, GW-003
 
-**Status**: accepted · 2026-08-20
-**Extends**: GW-002, GW-003
+**Ruling**: `tasks/TODO.md` holds only `## Queue` and `## Debt`. Merged work
+is replaced by a one-liner in `tasks/DONE.md`. `ready.py` ships once in the
+plugin (`plugin/skills/pr-loop/scripts/`), never copied per-repo.
+**Because**: every pr-loop invocation and human scan paid the token cost of
+a Done section that only grows, and per-repo `ready.py` copies drifted
+within a day of the first real project.
+**Enforced by**: `plugin/skills/pr-loop/SKILL.md` § 1. SPEC (housekeeping
+sweep) — advisory beyond that; no hook checks TODO.md's section contents.
+
+---
 
 ## Context
 

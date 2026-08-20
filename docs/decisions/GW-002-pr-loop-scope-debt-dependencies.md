@@ -1,7 +1,16 @@
-# GW-002 — pr-loop: scope boundary, debt, and task dependencies
+# GW-002 — a finding blocks the PR only if it's this task's problem
+Status: accepted · 2026-08-19 · Amends: GW-001
 
-**Status**: accepted · 2026-08-19
-**Extends**: GW-001 (pr-loop delivery state machine)
+**Ruling**: A REVIEW finding triggers REPAIR only if HIGH/MEDIUM **and** it
+breaks acceptance criteria, the gate, or a published claim — else it's
+`## Debt` regardless of severity; round 2+ reviews only the repair diff, and `Depends:` on task blocks enables parallel sessions.
+**Because**: an unbounded severity-only trigger over a fresh full-diff sweep
+every round never converges — PR #12/M8 took 6 rounds, with rounds 3+
+finding only doc-drift, not real defects.
+**Enforced by**: `plugin/skills/pr-loop/SKILL.md` § Scope boundary, § REVIEW;
+`plugin/skills/pr-loop/scripts/ready.py` (Depends: resolution).
+
+---
 
 ## Context
 

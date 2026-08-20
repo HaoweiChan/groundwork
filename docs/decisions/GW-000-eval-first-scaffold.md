@@ -1,6 +1,15 @@
-# GW-000: Eval-first scaffold instead of spec-driven development
+# GW-000 — the eval set is the spec, not prose requirements
+Status: accepted · 2026-08-15
 
-Date: 2026-08-15 · Status: accepted
+**Ruling**: `specs/` holds only three artifact kinds — executable invariants,
+per-task output contracts, and ADRs. Correctness is encoded as invariants
+and golden/adversarial eval cases, never prose requirement documents.
+**Because**: a prose spec like "the output must be correct" is unfalsifiable;
+an agent told "please be careful" drifts.
+**Enforced by**: PostToolUse invariant-suite hook + pre-commit eval gate
+(`.claude/hooks/`, `.githooks/`).
+
+---
 
 ## Context
 
