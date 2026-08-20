@@ -1,7 +1,7 @@
-# ADR-002 — pr-loop: scope boundary, debt, and task dependencies
+# GW-002 — pr-loop: scope boundary, debt, and task dependencies
 
 **Status**: accepted · 2026-08-19
-**Extends**: ADR-001 (pr-loop delivery state machine)
+**Extends**: GW-001 (pr-loop delivery state machine)
 
 ## Context
 
@@ -25,7 +25,7 @@ work a PR deliberately declines.
    gate red, or makes a published number/claim dishonest. Everything else —
    regardless of severity — is logged as debt. Honesty stays blocking
    because this scaffold treats published-but-wrong as the worst failure
-   class (ADR-000); PR #12's R14 (a known-wrong ground truth whose committed
+   class (GW-000); PR #12's R14 (a known-wrong ground truth whose committed
    raw report reads as verified-correct) is the canonical in-scope example,
    its R12/R13 doc drift the canonical debt.
 2. **Round 1 sweeps, later rounds don't.** Round 2+ reviewers see only the

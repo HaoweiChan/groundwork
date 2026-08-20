@@ -1,4 +1,4 @@
-# ADR-001 — pr-loop: delivery as a state machine, PR as evidence ledger
+# GW-001 — pr-loop: delivery as a state machine, PR as evidence ledger
 
 **Status**: accepted · 2026-08-19
 

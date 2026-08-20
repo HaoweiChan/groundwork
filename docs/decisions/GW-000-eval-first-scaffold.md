@@ -1,4 +1,4 @@
-# ADR-000: Eval-first scaffold instead of spec-driven development
+# GW-000: Eval-first scaffold instead of spec-driven development
 
 Date: 2026-08-15 · Status: accepted
 

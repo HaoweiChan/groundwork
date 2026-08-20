@@ -4,7 +4,8 @@ Eval-first repo, built on **groundwork**. Tasks live under `src/<task>/`.
 **The eval set IS the spec.** groundwork targets problems where requirements
 are clear but correctness is hard to define up front — so correctness is encoded
 as executable invariants and metrics, not prose. Architecture rationale lives in
-README.md; this file is the working contract.
+docs/groundwork.md; this file is the working contract. README.md belongs to the
+project, not to groundwork — replace it when instantiating the template.
 
 ## Toolchain
 
@@ -69,7 +70,7 @@ drives implement → gate → review → repair with subagents (implementer in a
 worktree, pr-reviewer with fresh context); the human only writes the spec and
 merges. A finding blocks only if it breaks the task's acceptance criteria,
 the gate, or the honesty of a published claim — everything else becomes a
-Debt task, not another round (ADR-002). The PR carries role-tagged structured
+Debt task, not another round (groundwork GW-002). The PR carries role-tagged structured
 findings and an evidence pack — never agent chatter. Independent tasks
 (`Depends:` satisfied, see `tasks/ready.py`) can run as parallel pr-loop
 sessions. Protocol: `.claude/skills/pr-loop/SKILL.md`.
