@@ -1,10 +1,9 @@
 # Tasks — pr-loop queue
 
-Block format and rules: `.claude/skills/pr-loop/SKILL.md`.
-`python3 tasks/ready.py` lists what is runnable right now.
+Format and rules: the groundwork plugin's `pr-loop` skill. Two sections only —
+merged work moves to `tasks/DONE.md` as one-liners. List unblocked tasks:
+`python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/ready.py` (from repo root).
 
 ## Queue
 
 ## Debt
-
-## Done

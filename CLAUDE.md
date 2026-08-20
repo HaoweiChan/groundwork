@@ -24,7 +24,7 @@ project, not to groundwork — replace it when instantiating the template.
 ```
 plugin/            the groundwork plugin — skills (pr-loop, groundwork-init, …) + agents
 .claude/skills/    project-local skills only (domain knowledge, vendored graphify)
-tasks/             TODO.md (Queue / Debt / Done) + ready.py (lists unblocked tasks)
+tasks/             TODO.md (Queue / Debt — the working set) + DONE.md (one-line index of merged work)
 .claude/hooks/     enforcement — the only layer that can actually block
 .githooks/         pre-commit eval gate (installed via core.hooksPath)
 specs/             ONLY: 000-invariants.md, per-task contracts, decisions/ADR-*.md
@@ -51,7 +51,7 @@ python3 -m evals.run --suite fast        # pass: score ≥ .eval-baseline.json
 ```bash
 python3 -m evals.run --suite all               # everything, writes report
 python3 -m evals.run --suite fast --update-baseline   # deliberate baseline move
-python3 tasks/ready.py                         # which tasks are unblocked (deps done)
+python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/ready.py   # unblocked tasks (run from repo root)
 ```
 
 ## Hard rules
@@ -61,8 +61,8 @@ python3 tasks/ready.py                         # which tasks are unblocked (deps
 2. **Every new failure becomes a case** in `evals/adversarial/` before it is fixed.
    Watch the new case fail first; an eval you've never seen red proves nothing.
 3. **specs/ holds only three kinds of files**: invariants, output contracts, ADRs.
-   No plans in specs/ — the only task file is `tasks/TODO.md` (the
-   pr-loop queue); ad-hoc task lists live in the session.
+   No plans in specs/ — task state lives only in `tasks/` (TODO.md working
+   set + DONE.md index); ad-hoc task lists live in the session.
 4. **No mocked results.** If a live dependency is unreachable, fail loudly; never
    fabricate output to make a run look green.
 5. Commits go through the pre-commit eval gate. `--no-verify` is for emergencies
@@ -85,7 +85,7 @@ merges. A finding blocks only if it breaks the task's acceptance criteria,
 the gate, or the honesty of a published claim — everything else becomes a
 Debt task, not another round (groundwork GW-002). The PR carries role-tagged structured
 findings and an evidence pack — never agent chatter. Independent tasks
-(`Depends:` satisfied, see `tasks/ready.py`) can run as parallel pr-loop
+(`Depends:` satisfied — the plugin's `ready.py` lists them) can run as parallel pr-loop
 sessions. Protocol: `plugin/skills/pr-loop/SKILL.md`.
 
 ## Adding a task

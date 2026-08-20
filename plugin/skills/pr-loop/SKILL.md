@@ -28,11 +28,17 @@ Role separation is the verification architecture — do not collapse it:
 ## States
 
 ### 1. SPEC
-Read the task block from `tasks/TODO.md` (format below). `/pr-loop next`
-takes the first ready Queue task — `python3 tasks/ready.py` lists them. A task
-with unmet `Depends:` is refused with the blocking ids, never started early.
-If the spec lacks acceptance criteria you can gate on, STOP and ask the
-human — that is a spec problem, not something to improvise past.
+Housekeeping first: any TODO.md block with `status: pr` whose PR has since
+merged is replaced by a one-liner in `tasks/DONE.md`
+(`- <id> — <title> (<merge date>) — <refs>`).
+
+Read the target task's block from `tasks/TODO.md` — locate it with grep and
+read ONLY that block; never load the whole file into context. `/pr-loop next`
+takes the first ready Queue task — list them with
+`python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/ready.py` (from the repo
+root). A task with unmet `Depends:` is refused with the blocking ids, never
+started early. If the spec lacks acceptance criteria you can gate on, STOP and
+ask the human — that is a spec problem, not something to improvise past.
 
 ### 2. IMPLEMENT
 Spawn an **implementer subagent with worktree isolation** on branch
@@ -139,13 +145,18 @@ One comment per role per round, always tagged, no untagged comments.
 
 ## tasks/TODO.md format
 
-Three sections, one shared id sequence (`T<N>` by convention; any
-letter-prefix id like `M8` works — legacy milestone ids keep their names):
+TODO.md is the WORKING SET only — two sections, one shared id sequence
+(`T<N>` by convention; any letter-prefix id like `M8` works — legacy
+milestone ids keep their names):
 
 - `## Queue` — runnable work, in priority order.
 - `## Debt` — findings and overflow logged by pr-loop runs; same block format
   plus `Origin:`. Promoting debt = moving the block into Queue.
-- `## Done` — blocks move here after the human merges.
+
+Merged work leaves TODO.md entirely: the block is replaced by a one-liner in
+**`tasks/DONE.md`** (`- <id> — <title> (<merge date>) — <refs>`). The
+narrative already lives in the ADRs/PR and the ledger; DONE.md is an index,
+not an archive. ready.py reads DONE.md ids when resolving `Depends:`.
 
 ```markdown
 ### T10 — <title>            [status: todo|in-progress|pr|done]
@@ -156,7 +167,8 @@ Acceptance: gateable criteria — eval cases, invariants, or a runnable check.
 Out of scope: (optional)
 ```
 
-`python3 tasks/ready.py` lists every `todo` task whose deps are all done —
-open one pr-loop session per ready task; the `task/<id>` worktree branches
-keep parallel runs isolated. Update the `status` field at each transition
-(in-progress at IMPLEMENT, pr at EVIDENCE, done only after human merge).
+ready.py lists every Queue task whose deps are all done — open one pr-loop
+session per ready task; the `task/<id>` worktree branches keep parallel runs
+isolated. Update the `status` field at each transition (in-progress at
+IMPLEMENT, pr at EVIDENCE; after the human merges, the next pr-loop run's
+housekeeping moves the block to DONE.md).

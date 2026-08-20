@@ -19,10 +19,11 @@ network is needed.
 1. **Detect the situation.** Greenfield (no test suite, little/no src) vs
    brownfield (existing tests, CI, docs). This changes step 3 only.
 
-2. **Task queue.** If `tasks/TODO.md` is missing, copy it and `tasks/ready.py`
-   from the marketplace clone. If the repo already tracks tasks elsewhere
-   (a milestone table, issues), do NOT convert anything — create the
-   three-section file alongside and note that pr-loop reads only this format.
+2. **Task queue.** If `tasks/TODO.md` is missing, copy it and `tasks/DONE.md`
+   from the marketplace clone (`ready.py` stays in the plugin — nothing to
+   copy). If the repo already tracks tasks elsewhere (a milestone table,
+   issues), do NOT convert anything — create the files alongside and note
+   that pr-loop reads only this format.
 
 3. **Gate.** If CLAUDE.md (create a minimal one if absent) has no `## Gate`
    section, add one:

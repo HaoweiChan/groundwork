@@ -96,9 +96,11 @@ Two rules keep the loop convergent (GW-002): a finding blocks a round only
 if it breaks the task's acceptance criteria, the gate, or the honesty of a
 published claim — everything else becomes a **Debt** task in `tasks/TODO.md`
 rather than round fuel; and only round 1 sweeps the full diff — later rounds
-review the repair. Task blocks carry `Depends:` so independent tasks
-(`tasks/ready.py` lists them) can run as parallel pr-loop sessions on
-isolated `task/<id>` worktree branches.
+review the repair. Task blocks carry `Depends:` so independent tasks can run
+as parallel pr-loop sessions on isolated `task/<id>` worktree branches — the
+plugin's `ready.py` lists what is unblocked. TODO.md stays small by design:
+it holds only Queue and Debt; merged work becomes a one-liner in
+`tasks/DONE.md`, and agents read single task blocks, never the whole file.
 
 ## Repo map
 
@@ -112,7 +114,7 @@ CLAUDE.md            facts layer — working rules incl. the ## Gate section (AG
 .claude/settings.json  hooks registration + plugin wiring (groundwork + ponytail)
 .claude/hooks/       post-edit invariant runner · session prompt logger
 .githooks/           pre-commit eval gate (installed via core.hooksPath)
-tasks/               TODO.md (Queue / Debt / Done) + ready.py
+tasks/               TODO.md (Queue / Debt — working set) + DONE.md (one-line merged index)
 specs/               ONLY three kinds: invariants · output contracts · the PROJECT's ADRs
 evals/run.py         stdlib-only runner — defines the case + adapter contract
 evals/golden/        hand-verified cases (provenance recorded per case)
