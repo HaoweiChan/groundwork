@@ -19,7 +19,7 @@ README.md; this file is the working contract.
 ```
 .claude/skills/    domain + process knowledge, loaded on demand
 .claude/agents/    cold-reviewer / eval-adversary / spec-drift / pr-reviewer subagents
-tasks/TODO.md      pr-loop task queue (format defined in the pr-loop skill)
+tasks/             TODO.md (Queue / Debt / Done) + ready.py (lists unblocked tasks)
 .claude/hooks/     enforcement — the only layer that can actually block
 .githooks/         pre-commit eval gate (installed via core.hooksPath)
 specs/             ONLY: 000-invariants.md, per-task contracts, decisions/ADR-*.md
@@ -37,6 +37,7 @@ python3 -m evals.run --suite fast              # quick gate suite
 python3 -m evals.run --suite invariant         # must-always-hold assertions
 python3 -m evals.run --suite all               # everything, writes report
 python3 -m evals.run --suite fast --update-baseline   # deliberate baseline move
+python3 tasks/ready.py                         # which tasks are unblocked (deps done)
 ```
 
 ## Hard rules
@@ -63,11 +64,15 @@ python3 -m evals.run --suite fast --update-baseline   # deliberate baseline move
 6. Eval gate green → commit
 
 For a full tasks/TODO.md task that should end in a PR, run the loop through
-**/pr-loop <task-id>** instead: one orchestrator session drives
-implement → gate → review → repair with subagents (implementer in a worktree,
-pr-reviewer with fresh context); the human only writes the spec and merges.
-The PR carries structured findings and an evidence pack — never agent chatter.
-Protocol: `.claude/skills/pr-loop/SKILL.md`.
+**/pr-loop <task-id>** (or `/pr-loop next`) instead: one orchestrator session
+drives implement → gate → review → repair with subagents (implementer in a
+worktree, pr-reviewer with fresh context); the human only writes the spec and
+merges. A finding blocks only if it breaks the task's acceptance criteria,
+the gate, or the honesty of a published claim — everything else becomes a
+Debt task, not another round (ADR-002). The PR carries role-tagged structured
+findings and an evidence pack — never agent chatter. Independent tasks
+(`Depends:` satisfied, see `tasks/ready.py`) can run as parallel pr-loop
+sessions. Protocol: `.claude/skills/pr-loop/SKILL.md`.
 
 ## Adding a task
 

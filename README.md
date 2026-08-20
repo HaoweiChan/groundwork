@@ -129,7 +129,16 @@ gates, humans retain spec and merge authority. The PR is an **evidence
 ledger**, not a communication bus: one structured findings comment per review
 round, a final evidence pack, and a metrics line per task in
 `evals/report/pr-loop-ledger.jsonl` — so the workflow itself is evaluated
-(review rounds, confirmed vs rejected findings, human interventions).
+(review rounds, repaired vs rejected vs debt-logged findings, human
+interventions).
+
+Two rules keep the loop convergent (ADR-002): a finding blocks a round only
+if it breaks the task's acceptance criteria, the gate, or the honesty of a
+published claim — everything else becomes a **Debt** task in `tasks/TODO.md`
+rather than round fuel; and only round 1 sweeps the full diff — later rounds
+review the repair. Task blocks carry `Depends:` so independent tasks
+(`tasks/ready.py` lists them) can run as parallel pr-loop sessions on
+isolated `task/<id>` worktree branches.
 Protocol: `.claude/skills/pr-loop/SKILL.md`.
 
 Design rationale for the whole approach: `specs/decisions/ADR-000`.

@@ -1,6 +1,6 @@
 ---
 name: pr-loop
-description: Orchestrated implement → verify → review → repair loop for one tasks/TODO.md task, ending in a PR that carries evidence, not chatter. Use when the user says /pr-loop <task-id>, "deliver T<N>", or asks to run a task through the full delivery loop.
+description: Orchestrated implement → verify → review → repair loop for one tasks/TODO.md task, ending in a PR that carries evidence, not chatter. Use when the user says /pr-loop <task-id>, /pr-loop next, "deliver T<N>", or asks to run a task through the full delivery loop.
 ---
 
 # pr-loop — the delivery state machine
@@ -28,15 +28,24 @@ Role separation is the verification architecture — do not collapse it:
 ## States
 
 ### 1. SPEC
-Read the task block from `tasks/TODO.md` (format below). If the spec lacks
-acceptance criteria you can gate on, STOP and ask the human — that is a spec
-problem, not something to improvise past.
+Read the task block from `tasks/TODO.md` (format below). `/pr-loop next`
+takes the first ready Queue task — `python3 tasks/ready.py` lists them. A task
+with unmet `Depends:` is refused with the blocking ids, never started early.
+If the spec lacks acceptance criteria you can gate on, STOP and ask the
+human — that is a spec problem, not something to improvise past.
 
 ### 2. IMPLEMENT
 Spawn an **implementer subagent with worktree isolation** on branch
 `task/<id>`. Its prompt must contain: the full task block, the repo's
-per-feature loop (failing eval case first), and the instruction to commit its
-work on the branch. It reports what it built and which new eval cases it added.
+per-feature loop (failing eval case first), the debt rule below, and the
+instruction to commit its work on the branch. It reports what it built and
+which new eval cases it added.
+
+**Debt rule (binds implementer and reviewer alike):** work discovered
+mid-task that exceeds the spec — an adjacent bug, a refactor the code
+"really needs", missing coverage elsewhere — is not done in this PR. Log it
+as a task block under `## Debt` in `tasks/TODO.md` (with `Origin:`) and stay
+on spec.
 
 ### 3. GATE (deterministic — you run it, never trust "I ran the tests")
 On the task branch:
@@ -49,8 +58,11 @@ the branch and `gh pr create` (body = task block + "evidence pack pending").
 Then REVIEW.
 
 ### 4. REVIEW
-Spawn the **pr-reviewer subagent** (fresh context, no author reasoning) on the
-PR diff. It returns findings in this schema, nothing else:
+Spawn the **pr-reviewer subagent** (fresh context, no author reasoning).
+Round 1 reviews the full PR diff; **round 2+ reviews only the repair diff
+plus the standing findings** — a fresh full-diff sweep every round finds new
+findings forever and the loop never converges. It returns findings in this
+schema, nothing else:
 
 ```json
 {"id": "R1", "severity": "HIGH|MEDIUM|LOW",
@@ -60,20 +72,33 @@ PR diff. It returns findings in this schema, nothing else:
  "acceptance": "what passing looks like after the fix"}
 ```
 
-Post **one PR comment per round**: a table of the round's findings. That
-comment is the audit record — no other reviewer chatter reaches the PR.
+**Scope boundary — what a finding may block.** A finding triggers REPAIR only
+if it is HIGH/MEDIUM **and** at least one of:
+- it violates the task's acceptance criteria,
+- it turns the gate red,
+- it makes a published number or claim dishonest — a metric that counts
+  wrong, a committed artifact a reader would take as verified-correct.
 
-- Findings with severity HIGH or MEDIUM → REPAIR.
-- Only LOW or none → reviewer states APPROVED → EVIDENCE.
+Everything else — **regardless of severity** — goes to `## Debt` in
+`tasks/TODO.md` with `Origin: PR #<n> <finding-id>` and the finding's
+evidence carried verbatim. Severity says how bad; scope says whose PR.
+
+Post **one PR comment per round**: the round's findings table, each row
+marked `repair` or `debt`. That comment is the audit record — no other
+reviewer chatter reaches the PR.
+
+- Any `repair` finding → REPAIR.
+- None (only `debt`/LOW) → reviewer states APPROVED → EVIDENCE.
 
 ### 5. REPAIR
-Relay the findings verbatim to the implementer (same subagent via SendMessage
-if alive, else a fresh one on the same worktree branch). Hard rule inherited
-from CLAUDE.md: **every confirmed HIGH/MEDIUM finding becomes an adversarial
-eval case before it is fixed** — watch it fail, then fix. A finding the
-implementer rejects gets a one-line written reason; the reviewer sees it next
-round. After the repair, post one implementer PR comment: per finding id —
-fixed (with the eval case id) or rejected (with the reason). Then → GATE.
+Relay the `repair` findings verbatim to the implementer (same subagent via
+SendMessage if alive, else a fresh one on the same worktree branch). Hard
+rule inherited from CLAUDE.md: **every confirmed repair finding becomes an
+adversarial eval case before it is fixed** — watch it fail, then fix. A
+finding the implementer rejects gets a one-line written reason; the reviewer
+sees it next round. After the repair, post one implementer PR comment: per
+finding id — fixed (with the eval case id) or rejected (with the reason).
+Then → GATE.
 
 **Circuit breaker:** after 3 review rounds without approval, or any
 implementer/reviewer deadlock on a finding, stop and hand the dispute to the
@@ -85,8 +110,9 @@ Update the PR body to the evidence pack:
 ```markdown
 ## Evidence pack — <task-id>
 **Gate**: invariant 12/12 · fast 44/44 (baseline 42) — run <date>
-**Review**: N rounds · findings H/M/L: a/b/c · confirmed x · rejected y (reasons inline above)
+**Review**: N rounds · findings H/M/L: a/b/c · repaired x · rejected y · debt-logged z
 **New eval cases**: <ids added this task>
+**Debt logged**: <T-ids created in tasks/TODO.md ## Debt>
 **Verification**: <the one command a human can run to see it work>
 ```
 
@@ -94,7 +120,7 @@ Append one line to `evals/report/pr-loop-ledger.jsonl` (the workflow's own
 eval — commit it with the branch):
 
 ```json
-{"task":"T10","date":"YYYY-MM-DD","rounds":2,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"confirmed":3,"rejected":1,"gate_failures":1,"human_interventions":0}
+{"task":"T10","date":"YYYY-MM-DD","rounds":2,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"repaired":2,"rejected":1,"debt_logged":1,"gate_failures":1,"human_interventions":0}
 ```
 
 Notify the human: task id, PR link, one-line summary. **You do not merge.**
@@ -105,21 +131,32 @@ Every PR comment is posted by the same `gh` account, so the first line of each
 comment MUST declare the role — this is how the human tracks who said what:
 
 ```
-**pr-loop/reviewer — round <N>**      findings table
+**pr-loop/reviewer — round <N>**      findings table (each row: repair | debt)
 **pr-loop/implementer — round <N>**   per-finding: fixed (case id) / rejected (reason)
 **pr-loop/orchestrator**              evidence pack, gate failures, circuit-breaker escalation
 ```
 
 One comment per role per round, always tagged, no untagged comments.
 
-## tasks/TODO.md task format
+## tasks/TODO.md format
+
+Three sections, one shared `T<N>` id sequence:
+
+- `## Queue` — runnable work, in priority order.
+- `## Debt` — findings and overflow logged by pr-loop runs; same block format
+  plus `Origin:`. Promoting debt = moving the block into Queue.
+- `## Done` — blocks move here after the human merges.
 
 ```markdown
-## T10 — <title>            [status: todo|in-progress|pr|done]
+### T10 — <title>            [status: todo|in-progress|pr|done]
+Depends: T3, T7        (optional — task ids that must be done first)
+Origin: PR #12 R12     (debt blocks only — which PR/finding produced it)
 Spec: what and why, 2-5 lines.
 Acceptance: gateable criteria — eval cases, invariants, or a runnable check.
 Out of scope: (optional)
 ```
 
-Update the task's `status` field at each transition (in-progress at IMPLEMENT,
-pr at EVIDENCE, done only after human merge).
+`python3 tasks/ready.py` lists every `todo` task whose deps are all done —
+open one pr-loop session per ready task; the `task/<id>` worktree branches
+keep parallel runs isolated. Update the `status` field at each transition
+(in-progress at IMPLEMENT, pr at EVIDENCE, done only after human merge).
