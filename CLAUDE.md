@@ -30,7 +30,7 @@ tasks/             TODO.md (Queue / Debt — the working set) + DONE.md (one-lin
 specs/             ONLY: 000-invariants.md, per-task contracts, decisions/ADR-*.md + decisions/INDEX.md
 evals/golden/      hand-labeled cases (JSON, one per case)
 evals/adversarial/ cases known or designed to break the pipeline
-evals/report/      every run's output, committed to git
+evals/report/      history.jsonl (one line per run) + full reports only for requested/`all`/red runs and cited reports of record
 prompts/           AI-collaboration record (auto-dumped raw/ + curated files)
 src/<task>/        implementation + eval_adapter.py per task
 docs/              groundwork.md (process reference) + decisions/GW-* (template's own ADRs)

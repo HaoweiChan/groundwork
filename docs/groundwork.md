@@ -49,6 +49,9 @@ suggestion an agent can talk itself past.
 - Every session end → the session's prompts are dumped to `prompts/raw/`,
   so the AI-collaboration record builds itself.
 
+Every gate run appends a `history.jsonl` line; a full per-case report is
+written only on request, `--suite all`, or a red run (groundwork GW-008).
+
 Enforcement is deliberately **repo-side, never plugin-side**: a plugin can be
 disabled silently; a hook versioned with the code cannot.
 
@@ -119,7 +122,7 @@ specs/               ONLY three kinds: invariants · output contracts · the PRO
 evals/run.py         stdlib-only runner — defines the case + adapter contract
 evals/golden/        hand-verified cases (provenance recorded per case)
 evals/adversarial/   inputs that broke, or are designed to break, the pipeline
-evals/report/        every run's scored output, committed — the progress narrative
+evals/report/        history.jsonl (one line per run) + full reports only for requested/`all`/red runs and cited reports of record
 prompts/             AI-collaboration record: auto-dumped raw/ + curated correction chains
 src/<task>/          implementations — each exposes eval_adapter.py to the runner
 docs/groundwork.md   this file — the groundwork process reference

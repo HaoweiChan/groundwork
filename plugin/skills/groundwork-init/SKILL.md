@@ -33,7 +33,8 @@ network is needed.
    - Greenfield: offer the groundwork eval harness — copy `evals/run.py` and
      the `evals/{golden,adversarial,report}/` skeleton from the marketplace
      clone, and gate on `--suite invariant` (100%) + `--suite fast`
-     (≥ `.eval-baseline.json`).
+     (≥ `.eval-baseline.json`). `evals/report/history.jsonl` is created on
+     the first run (one line, no other change).
    pr-loop refuses to run without this section, so this step is the one that
    must not be skipped.
 
