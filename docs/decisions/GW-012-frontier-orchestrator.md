@@ -5,8 +5,8 @@ Status: accepted · 2026-08-21 · Amends: GW-011
 `gpt-5.6-sol` in Codex; economy routing applies only to bounded subagents.
 **Because**: the orchestrator integrates incomplete evidence, detects risk,
 routes models, and controls circuit breakers across the entire delivery state.
-**Enforced by**: `pr-loop-orchestrator-*`; repeated pr-loop model-floor checks
-and the `orchestrator_checks` ledger trace.
+**Enforced by**: `plugin/tests/test_plugin_contracts.py`; repeated pr-loop
+model-floor checks and the `orchestrator_checks` ledger trace.
 
 ---
 

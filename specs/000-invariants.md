@@ -21,35 +21,5 @@ Format per invariant:
 ---
 
 Task-specific invariants live below a `## <task>` heading as tasks are added.
-
-## pr_loop_analysis
-
-## INV-1: A non-empty PR diff always yields bounded review context without invented impact
-- Rationale: an empty or fabricated analysis either restores repository-wide reviewer discovery or misdirects verification.
-- Enforced by: `evals/adversarial/pr-loop-analysis-new-surface.json` (`pr-loop-analysis-new-surface`)
-
-## INV-2: Reviewer approval and orchestrator confidence routing use the same threshold
-- Rationale: contradictory approval can both spend a needless verification call and publish an approved result with unresolved clarification findings.
-- Enforced by: `evals/adversarial/pr-loop-review-confidence-routing.json` (`pr-loop-review-confidence-routing`)
-
-## INV-3: Change analysis never drops review context while reporting success
-- Rationale: misparsed paths, partial preflight resolutions, and missed dependency manifests silently under-scope review.
-- Enforced by: `pr-loop-analysis-git-quoted-path`, `pr-loop-analysis-preflight-all-files`, `pr-loop-analysis-pipfile`
-
-## INV-4: Reviewer output and post-VERIFY routing are deterministic
-- Rationale: invalid JSON or an unrouteable result costs manual recovery or another model call.
-- Enforced by: `pr-loop-review-protocol-envelope`
-
-## codex_plugin
-
-## INV-5: The distributable process layer installs on Claude Code and Codex without behavioral forks
-- Rationale: duplicated implementations or missing reviewer roles make verification depend on which host runs it.
-- Enforced by: `codex-plugin-package`, `codex-plugin-portability`, `codex-plugin-review-role-parity`, `codex-plugin-initializer-scaffold`, `codex-plugin-fresh-review-context`, `codex-plugin-worktree-isolation`
-
-## INV-6: pr-loop routes routine subagent work economically without downgrading high-risk review
-- Rationale: always using the frontier model wastes the savings from bounded context, while always using a smaller model underpowers the cases that need deeper reasoning.
-- Enforced by: `evals/adversarial/pr-loop-model-routing.json` (`pr-loop-model-routing`)
-
-## INV-7: pr-loop never downgrades its orchestrator
-- Rationale: global risk classification, model routing, state transitions, and circuit breakers require the strongest reasoning tier even when bounded subagents do not.
-- Enforced by: `pr-loop-orchestrator-frontier`, `pr-loop-orchestrator-runtime-fallback`, `pr-loop-orchestrator-policy-conflict`, `pr-loop-orchestrator-ledger-directive`
+Groundwork's own invariants do not belong here; they are executable contracts
+under `plugin/tests/` in the template source repository.

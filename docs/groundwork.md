@@ -142,6 +142,12 @@ on name collision. `plugin/assets/scaffold/` carries every file the initializer
 may seed, because installed plugins execute from a cache without access to the
 surrounding marketplace repository.
 
+The Groundwork source repository has one additional boundary (GW-013): root
+`evals/`, `src/`, and `specs/` are seed material for an adopting project, not a
+place to verify the plugin itself. Groundwork's own stdlib-only contracts live in
+`plugin/tests/`; its source-repo hooks run that suite. The bundled scaffold keeps
+the eval hooks described above for descendant projects.
+
 ```
 CLAUDE.md / AGENTS.md facts layer — working rules including the ## Gate section
 .claude/settings.json  hooks registration + plugin wiring (groundwork + ponytail)
@@ -152,11 +158,12 @@ tasks/               TODO.md (Queue / Debt — working set) + DONE.md (one-line 
 specs/               ONLY three kinds: invariants · output contracts · the PROJECT's ADRs
 evals/run.py         stdlib-only runner — defines the case + adapter contract
 plugin/skills/pr-loop/scripts/analyze.py  stdlib-only review planner; consumes diff + optional existing graph
-evals/golden/        hand-verified cases (provenance recorded per case)
-evals/adversarial/   inputs that broke, or are designed to break, the pipeline
-evals/report/        history.jsonl (one line per run) + full reports only for requested/`all`/red runs and cited reports of record
+plugin/tests/        Groundwork's own plugin contracts and regressions
+evals/golden/        project seed for hand-verified cases (empty in this source repo)
+evals/adversarial/   project seed for breaking inputs (empty in this source repo)
+evals/report/        project seed for run history/reports (empty in this source repo)
 prompts/             AI-collaboration record: auto-dumped raw/ + curated correction chains
-src/<task>/          implementations — each exposes eval_adapter.py to the runner
+src/<task>/          project implementation seed (empty in this source repo)
 docs/groundwork.md   this file — the groundwork process reference
 ```
 

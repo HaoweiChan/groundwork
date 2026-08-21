@@ -6,7 +6,7 @@ Status: accepted · 2026-08-21 · Amends: GW-003
 roles ship as skills that spawn fresh-context subagents, while Claude agents remain.
 **Because**: duplicating or moving the plugin would create two drifting process
 implementations, while Codex does not ingest Claude's `agents/` directory.
-**Enforced by**: all `codex-plugin-*` cases; both plugin validators.
+**Enforced by**: `plugin/tests/test_plugin_contracts.py`; both plugin validators.
 
 ---
 

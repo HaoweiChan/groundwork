@@ -1,11 +1,9 @@
 # Project working rules
 
-Eval-first repo, built on **groundwork**. Tasks live under `src/<task>/`.
-**The eval set IS the spec.** groundwork targets problems where requirements
-are clear but correctness is hard to define up front — so correctness is encoded
-as executable invariants and metrics, not prose. Architecture rationale lives in
-docs/groundwork.md; this file is the working contract. README.md belongs to the
-project, not to groundwork — replace it when instantiating the template.
+This is the **groundwork source repository** and also the seed copied into new
+eval-first projects. Keep those roles separate: Groundwork's own executable
+contracts live in `plugin/tests/`; root `src/`, `evals/`, and `specs/` remain a
+clean project scaffold. Architecture rationale lives in `docs/groundwork.md`.
 
 ## Toolchain
 
@@ -25,44 +23,40 @@ project, not to groundwork — replace it when instantiating the template.
 
 ```
 plugin/            dual Claude/Codex plugin — shared skills + canonical agent contracts
+plugin/tests/      Groundwork's own stdlib-only contract and regression tests
 .agents/plugins/   Codex repo marketplace
 .claude/skills/    project-local skills only (domain knowledge, vendored graphify)
 tasks/             TODO.md (Queue / Debt — the working set) + DONE.md (one-line index of merged work)
 .claude/hooks/     enforcement — the only layer that can actually block
-.githooks/         pre-commit eval gate (installed via core.hooksPath)
+.githooks/         pre-commit Groundwork test gate (installed via core.hooksPath)
 specs/             ONLY: 000-invariants.md, per-task contracts, decisions/ADR-*.md + decisions/INDEX.md
-evals/golden/      hand-labeled cases (JSON, one per case)
-evals/adversarial/ cases known or designed to break the pipeline
-evals/report/      history.jsonl (one line per run) + full reports only for requested/`all`/red runs and cited reports of record
+evals/              empty project-template eval harness; never store Groundwork self-tests here
 prompts/           AI-collaboration record (auto-dumped raw/ + curated files)
-src/<task>/        implementation + eval_adapter.py per task
+src/               empty project-template implementation root
 docs/              groundwork.md (process reference) + decisions/GW-* (template's own ADRs)
 ```
 
 ## Gate
 
-The objective pass/fail for this repo. pr-loop, the hooks, and any reviewer
-run exactly these, in order:
+The objective pass/fail for the Groundwork source repository:
 
 ```bash
-python3 -m evals.run --suite invariant   # pass: 100%
-python3 -m evals.run --suite fast        # pass: score ≥ .eval-baseline.json
+python3 -m unittest discover -s plugin/tests -p 'test_*.py'
 ```
 
 ## Commands
 
 ```bash
-python3 -m evals.run --suite all               # everything, writes report
-python3 -m evals.run --suite fast --update-baseline   # deliberate baseline move
+python3 -m unittest discover -s plugin/tests -p 'test_*.py'
 python3 plugin/skills/pr-loop/scripts/ready.py   # unblocked tasks in this source repo
 ```
 
 ## Hard rules
 
-1. **Never edit `.eval-baseline.json` by hand** and never `--update-baseline` just to
-   make the pre-commit gate pass. A baseline move is a decision — record why in an ADR.
-2. **Every new failure becomes a case** in `evals/adversarial/` before it is fixed.
-   Watch the new case fail first; an eval you've never seen red proves nothing.
+1. **Root `evals/` and `src/` are seed material, not Groundwork's self-test
+   suite.** Put Groundwork regressions and contracts under `plugin/tests/`.
+2. **Every new Groundwork failure becomes a test** under `plugin/tests/` before
+   it is fixed. Watch the test fail first; a test never seen red proves nothing.
 3. **specs/ holds only three kinds of files**: invariants, output contracts, ADRs
    (each ADR gets the 3-line header + `---` fold, groundwork GW-006; the ADR
    digest is `specs/decisions/INDEX.md`, one line per ADR).
@@ -70,17 +64,20 @@ python3 plugin/skills/pr-loop/scripts/ready.py   # unblocked tasks in this sourc
    set + DONE.md index); ad-hoc task lists live in the session.
 4. **No mocked results.** If a live dependency is unreachable, fail loudly; never
    fabricate output to make a run look green.
-5. Commits go through the pre-commit eval gate. `--no-verify` is for emergencies
+5. Commits go through the pre-commit test gate. `--no-verify` is for emergencies
    and must be explained in the commit message.
+6. Commit subjects follow the existing form
+   **`<scope-or-GW-NNN>: <lowercase imperative summary>`**. Inspect recent history
+   before committing; do not switch to an unprefixed sentence-style subject.
 
 ## Per-feature loop
 
-1. Plan mode → ADR + new invariant/eval cases (eval first)
-2. Watch the new cases fail
-3. Implement (PostToolUse hook keeps running the invariant suite)
-4. `cold-reviewer` subagent cold-reads → its findings become adversarial cases
-5. New cases into the eval set → back to 3
-6. Eval gate green → commit
+1. Plan mode → GW decision + new `plugin/tests/` contract/regression (test first)
+2. Watch the new test fail
+3. Implement (PostToolUse hook keeps running the plugin tests)
+4. `cold-reviewer` subagent cold-reads → findings become regression tests
+5. New tests into the suite → back to 3
+6. Gate green → commit
 
 For a full tasks/TODO.md task that should end in a PR, run the loop through
 **`/pr-loop <task-id>`** on Claude Code or **`$pr-loop <task-id>`** on Codex
@@ -101,6 +98,9 @@ sessions. Protocol: `plugin/skills/pr-loop/SKILL.md`.
 review plan without starting delivery.
 
 ## Adding a task
+
+The following applies after this repository is instantiated as a project; it
+does not authorize Groundwork maintainers to use the seed directories for plugin tests.
 
 1. `src/<task>/` with an `eval_adapter.py` exposing `run_case(case) -> {"passed": bool, ...}`
 2. A domain-knowledge skill in `.claude/skills/<task>-domain/`

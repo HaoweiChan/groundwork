@@ -6,8 +6,8 @@ to Sonnet on Claude Code or Luna/Terra on Codex; explicitly request Opus or Sol
 for high-risk, full-review, cross-cutting, security/safety, or ambiguous work.
 **Because**: role isolation and executable gates carry correctness, so routine
 bounded work should not automatically pay frontier-model cost.
-**Enforced by**: `pr-loop-model-routing*`; `plugin/skills/pr-loop/SKILL.md` model
-routing table and evidence ledger.
+**Enforced by**: `plugin/tests/test_plugin_contracts.py`;
+`plugin/skills/pr-loop/SKILL.md` model routing table and evidence ledger.
 
 ---
 

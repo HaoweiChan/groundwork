@@ -7,7 +7,7 @@ review plus one delta verification is the default budget; a third call needs a h
 **Because**: repeated repository discovery and full-context agent handoffs dominate
 verification cost without adding proportional evidence.
 **Enforced by**: `plugin/skills/pr-loop/scripts/analyze.py`; `pr-loop` ANALYZE,
-REVIEW, and VERIFY states; cases `pr-loop-analysis-*`.
+REVIEW, and VERIFY states; `plugin/tests/test_analyze.py`.
 
 ---
 

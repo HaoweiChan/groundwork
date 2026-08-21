@@ -1,9 +1,0 @@
-{
-  "id": "pr-loop-orchestrator-policy-conflict",
-  "task": "codex_plugin",
-  "suites": ["fast", "invariant"],
-  "input": {"check": "orchestrator_policy_conflict"},
-  "expect": {
-    "economy_orchestrator_permissions": []
-  }
-}

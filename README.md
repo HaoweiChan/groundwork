@@ -14,6 +14,19 @@ verification instead of an open-ended implementer↔reviewer loop.
 Full architecture and process: **[docs/groundwork.md](docs/groundwork.md)**.
 groundwork's own design decisions: `docs/decisions/GW-*.md`.
 
+## Maintaining Groundwork
+
+This repository deliberately keeps the project-facing `evals/`, `src/`, and
+`specs/` scaffold clean. Groundwork's plugin contracts and regressions live in
+`plugin/tests/` and run without third-party dependencies:
+
+```bash
+python3 -m unittest discover -s plugin/tests -p 'test_*.py'
+```
+
+Do not add plugin self-tests or generated run history to the root template eval
+set. Those directories become the adopting project's specification after init.
+
 ## Greenfield — start a project from the template
 
 ```bash
