@@ -78,28 +78,36 @@ failing eval case → implement (invariant hook watching) → cold review
 ## Delivery loop (/pr-loop)
 
 For a full task that ends in a PR, the human is not the message broker between
-an implementer session and a reviewer session — an orchestrator session owns
-the state machine:
+an implementer session and a reviewer session. The orchestrator also prevents
+the agents from repeatedly paying to rediscover the same repository context:
 
 ```
-SPEC → IMPLEMENT → GATE → REVIEW ─ findings → REPAIR → GATE → REVIEW …
-(human)  (subagent,  (repo's  (pr-reviewer,        └─ approve → EVIDENCE → HUMAN
-          worktree)   gate)    fresh context)                    (pack)     (merge)
+SPEC → IMPLEMENT → ANALYZE/PREFLIGHT → GATE → ADAPTIVE REVIEW
+REVIEW ─ approve → EVIDENCE → HUMAN
+REVIEW ─ findings → REPAIR → ANALYZE/PREFLIGHT → GATE → DELTA VERIFY
+DELTA VERIFY ─ approve → EVIDENCE; open after call 2 → HUMAN
 ```
 
 Agents own execution and adversarial review, the repo's gate owns objective
-pass/fail, humans retain spec and merge authority. The PR is an **evidence
-ledger**, not a communication bus: one role-tagged structured findings comment
-per review round, a final evidence pack, and a metrics line per task in
-`tasks/pr-loop-ledger.jsonl` — so the workflow itself is evaluated
-(review rounds, repaired vs rejected vs debt-logged findings, human
-interventions).
+pass/fail, humans retain spec and merge authority. Before any reviewer call, a
+stdlib analyzer turns the diff and an existing Graphify graph (when present)
+into a compact impact/risk/context packet; Ponytail questions about new surface
+must be resolved; a red gate returns directly to repair. The first reviewer
+call is focused or full according to risk. If repair is needed, the second call
+verifies only standing findings plus the repair diff. A third call requires an
+explicit human choice (GW-009).
 
-Two rules keep the loop convergent (GW-002): a finding blocks a round only
-if it breaks the task's acceptance criteria, the gate, or the honesty of a
-published claim — everything else becomes a **Debt** task in `tasks/TODO.md`
-rather than round fuel; and only round 1 sweeps the full diff — later rounds
-review the repair. Task blocks carry `Depends:` so independent tasks can run
+The PR is an **evidence ledger**, not a communication bus: bounded role-tagged
+comments, committed JSON findings, and a current evidence body. The metrics line
+in `tasks/pr-loop-ledger.jsonl` records findings and repair outcomes plus review
+calls/mode and actual reviewer tokens when exposed, so verification cost is
+measured rather than guessed.
+
+Three rules keep the loop convergent (GW-002, GW-009): a finding blocks only
+if it breaks acceptance, the gate, or a published claim; blocking also needs
+concrete evidence and confidence at least 0.80; and repair is batched before
+one delta verification. Everything else becomes a **Debt** task in
+`tasks/TODO.md`. Task blocks carry `Depends:` so independent tasks can run
 as parallel pr-loop sessions on isolated `task/<id>` worktree branches — the
 plugin's `ready.py` lists what is unblocked. TODO.md stays small by design:
 it holds only Queue and Debt; merged work becomes a one-liner in
@@ -120,6 +128,7 @@ CLAUDE.md            facts layer — working rules incl. the ## Gate section (AG
 tasks/               TODO.md (Queue / Debt — working set) + DONE.md (one-line merged index)
 specs/               ONLY three kinds: invariants · output contracts · the PROJECT's ADRs
 evals/run.py         stdlib-only runner — defines the case + adapter contract
+plugin/skills/pr-loop/scripts/analyze.py  stdlib-only review planner; consumes diff + optional existing graph
 evals/golden/        hand-verified cases (provenance recorded per case)
 evals/adversarial/   inputs that broke, or are designed to break, the pipeline
 evals/report/        history.jsonl (one line per run) + full reports only for requested/`all`/red runs and cited reports of record

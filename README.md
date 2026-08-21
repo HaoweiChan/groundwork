@@ -5,9 +5,11 @@
 Agents write and maintain most of the code; what survives their handoffs is
 executable checks and enforcement, not prose. groundwork gives a project four
 layers — facts (`CLAUDE.md`), knowledge (skills), execution (review agents),
-enforcement (hooks) — plus an eval harness that IS the spec and a `/pr-loop`
-delivery state machine that keeps humans out of the implementer↔reviewer
-relay loop.
+enforcement (hooks) — plus an eval harness that IS the spec and a cost-aware
+`/pr-loop` delivery state machine. Before model review it builds deterministic
+change intelligence from the diff and an existing Graphify graph, enforces a
+Ponytail surface preflight, and defaults to one adaptive review plus one delta
+verification instead of an open-ended implementer↔reviewer loop.
 
 Full architecture and process: **[docs/groundwork.md](docs/groundwork.md)**.
 groundwork's own design decisions: `docs/decisions/GW-*.md`.
@@ -43,7 +45,8 @@ and never touches your README, tests, or existing ADR numbering:
 `/groundwork-init` scaffolds `tasks/` (pr-loop queue), a `## Gate` section in
 CLAUDE.md pointing at *your existing* test commands, optional git hooks, and
 a `.groundwork-version` marker. The pr-loop state machine runs against
-whatever gate your repo already has.
+whatever gate your repo already has. `/pr-loop analyze` produces a read-only
+risk/impact/context packet without starting delivery or spending a reviewer call.
 
 ## Updating a project
 

@@ -6,8 +6,8 @@ assumed `main`) into the task branch — never rebase; conflicts go to the imple
 id collisions are reconciled; the gate runs on the synced tree, EVIDENCE needs `mergeable`.
 **Because**: parallel pr-loop sessions merge into the base while others run — the
 loop was blind to this and a gate passed on a stale base proves nothing.
-**Enforced by**: `plugin/skills/pr-loop/SKILL.md` § 3. GATE (branch freshness),
-§ 6. EVIDENCE; `Base:` line in the PR body template — advisory beyond that.
+**Enforced by**: `plugin/skills/pr-loop/SKILL.md` § 4. GATE (branch freshness),
+§ 8. EVIDENCE; `Base:` line in the PR body template — advisory beyond that.
 
 ---
 

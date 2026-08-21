@@ -1,7 +1,7 @@
 {
   "name": "groundwork",
-  "version": "0.3.0",
-  "description": "Eval-first process layer: pr-loop delivery state machine (implement → gate → review → repair with role separation), evidence-only review agents (cold-reviewer, eval-adversary, spec-drift, pr-reviewer), eval-protocol / failure-triage / cost-discipline skills, and /groundwork-init to adopt groundwork in greenfield or brownfield repos.",
+  "version": "0.4.0",
+  "description": "Eval-first process layer: cost-aware pr-loop (deterministic change analysis, Ponytail preflight, adaptive review, bounded delta verification), evidence-only review agents, eval/failure/cost skills, and /groundwork-init.",
   "author": {
     "name": "Haowei Chan",
     "url": "https://github.com/HaoweiChan"

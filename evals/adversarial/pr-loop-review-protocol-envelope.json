@@ -1,0 +1,13 @@
+{
+  "id": "pr-loop-review-protocol-envelope",
+  "task": "pr_loop_analysis",
+  "suites": ["fast", "invariant"],
+  "input": {
+    "protocol_check": "review-envelope"
+  },
+  "expect": {
+    "single_json_envelope": true,
+    "clarify_downgrade_defined": true,
+    "repair_regression_route_defined": true
+  }
+}

@@ -1,263 +1,262 @@
 ---
 name: pr-loop
-description: Orchestrated implement → verify → review → repair loop for one tasks/TODO.md task, ending in a PR that carries evidence, not chatter. Use when the user says /pr-loop <task-id>, /pr-loop next, "deliver T<N>", or asks to run a task through the full delivery loop.
+description: Cost-aware implement → analyze → gate → review → repair delivery loop for one tasks/TODO.md task, ending in an evidence-backed PR. Use for /pr-loop <task-id>, /pr-loop next, /pr-loop analyze, "deliver T<N>", or a full PR delivery loop.
 ---
 
-# pr-loop — the delivery state machine
+# pr-loop — cost-aware delivery state machine
 
 You are the **orchestrator**. You never write implementation code and never
-review it yourself. You own state transitions, deterministic gates, and the
-evidence ledger. The human's only two touchpoints are: invoking this skill,
-and merging the PR.
+review it yourself. You own transitions, deterministic gates, the review-call
+budget, and the evidence ledger. The human invokes the loop and merges the PR.
 
 ```
-SPEC → IMPLEMENT → GATE → REVIEW ─ findings → REPAIR → GATE → REVIEW …
-                              └──── approve → EVIDENCE → HUMAN (merge)
+SPEC → IMPLEMENT → ANALYZE/PREFLIGHT → GATE → REVIEW
+REVIEW ─ approve → EVIDENCE → HUMAN
+REVIEW ─ findings → REPAIR → ANALYZE/PREFLIGHT → GATE → VERIFY
+VERIFY ─ approve → EVIDENCE
+VERIFY ─ open after call 2 → HUMAN
 ```
-
-Role separation is the verification architecture — do not collapse it:
 
 | Role | Owns | May never |
 |---|---|---|
-| implementer (subagent, worktree) | implementation + tests | approve its own work |
-| pr-reviewer (subagent, fresh context) | falsification, structured findings | edit code |
-| eval suite | objective pass/fail | be skipped or mocked |
-| orchestrator (you) | transitions, relay, ledger | implement or review |
-| human | spec, disputes, merge | be needed mid-loop |
+| implementer (subagent, worktree) | implementation, cases, preflight resolutions | approve its own work |
+| pr-reviewer (subagent, fresh context) | one falsification review + bounded delta verification | edit code |
+| analyzer + eval suite | deterministic context/risk + objective pass/fail | be skipped or mocked |
+| orchestrator | transitions, freshness, routing, budget, ledger | implement or review |
+| human | spec, disputes, merge, optional third review call | be needed inside the default two-call loop |
 
-## States
+Default model-review budget: **2 calls total** — one adaptive review and one
+delta verification. A third call requires explicit human choice at the circuit
+breaker. Deterministic analyzer and gate runs do not count as model-review calls.
 
-### 1. SPEC
-Housekeeping first: any TODO.md block with `status: pr` whose PR has since
-merged is replaced by a one-liner in `tasks/DONE.md`
-(`- <id> — <title> (<merge date>) — <refs>`).
+## 1. SPEC
 
-Read the target task's block from `tasks/TODO.md` — locate it with grep and
-read ONLY that block; never load the whole file into context. `/pr-loop next`
-takes the first ready Queue task — list them with
-`python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/ready.py` (from the repo
-root). A task with unmet `Depends:` is refused with the blocking ids, never
-started early. If the spec lacks acceptance criteria you can gate on, STOP and
-ask the human — that is a spec problem, not something to improvise past.
+Housekeeping first: a TODO.md block with `status: pr` whose PR merged becomes a
+one-liner in `tasks/DONE.md` (`- <id> — <title> (<merge date>) — <refs>`).
 
-### 2. IMPLEMENT
-Spawn an **implementer subagent with worktree isolation** on branch
-`task/<id>`. Its prompt must contain: the full task block, the repo's
-per-feature loop (failing eval case first), the debt rule below, and the
-instruction to commit its work on the branch. It reports what it built and
-which new eval cases it added.
+Read only the target block from `tasks/TODO.md`. `/pr-loop next` uses the first
+ready Queue task from:
 
-**Debt rule (binds implementer and reviewer alike):** work discovered
-mid-task that exceeds the spec — an adjacent bug, a refactor the code
-"really needs", missing coverage elsewhere — is not done in this PR. Log it
-as a task block under `## Debt` in `tasks/TODO.md` (with `Origin:`) and stay
-on spec.
-
-### 3. GATE (deterministic — you run it, never trust "I ran the tests")
-
-**Branch freshness first — an orchestrator duty, every round.** The base is
-the PR's target branch (`gh pr view --json baseRefName`; before the PR exists,
-the branch the task was cut from) — never assume `main`. `git fetch origin`
-and compare the task branch to `origin/<base>`. If the base advanced (parallel
-pr-loop sessions merge while you run): `git merge origin/<base>` into the task
-branch — merge, never rebase (a rebase needs a force-push). Textual conflicts
-are implementer work: relay them as a repair item, never resolve them yourself
-and never hand them to the reviewer. Then check for **semantic collisions**
-git cannot see — the base added something in a namespace this branch also
-adds (an ADR number, a task id, a case id, a TODO.md block): renumber or
-reconcile on the branch. Only after the branch contains the base do you run
-the gate — the gate must pass on the tree that will actually be merged, not on
-a stale base. Record `Base: <base>@<sha>` in the PR body each time you sync.
-
-On the (now current) task branch, run the commands in the repo CLAUDE.md's
-**`## Gate`** section, in order, judged by the pass criteria stated there. No `## Gate`
-section → STOP and ask the human to define one: a delivery loop without an
-objective gate is two agents complimenting each other.
-Fail → back to REPAIR with the raw output. Pass → first time through, push
-the branch and `gh pr create`, body = the rolling evidence pack (template
-under **PR body**, below) seeded with Round 0 = gate only, Decision: in
-repair — never a placeholder like "evidence pack pending".
-Then REVIEW.
-
-### 4. REVIEW
-Spawn the **pr-reviewer subagent** (fresh context, no author reasoning).
-Round 1 reviews the full PR diff; **round 2+ reviews only the repair diff
-plus the standing findings** — a fresh full-diff sweep every round finds new
-findings forever and the loop never converges. It returns findings in this
-schema, nothing else:
-
-```json
-{"id": "R1", "severity": "HIGH|MEDIUM|LOW",
- "claim": "what is wrong, one sentence",
- "evidence": "file:line + the concrete input/state that triggers it",
- "repro": "command or case that demonstrates it",
- "acceptance": "what passing looks like after the fix"}
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/ready.py
 ```
 
-**Scope boundary — what a finding may block.** A finding triggers REPAIR only
-if it is HIGH/MEDIUM **and** at least one of:
-- it violates the task's acceptance criteria,
-- it turns the gate red,
-- it makes a published number or claim dishonest — a metric that counts
-  wrong, a committed artifact a reader would take as verified-correct, or
-  repair-round history / superseded numbers / per-round narrative bled into
-  a README, analysis report, or other document of record (that audit trail
-  belongs only in `tasks/reviews/`, never in a final document).
+Refuse unmet `Depends:`. If acceptance criteria are not gateable, stop and ask
+the human; do not improvise a spec.
 
-Everything else — **regardless of severity** — goes to `## Debt` in
-`tasks/TODO.md` with `Origin: PR #<n> <finding-id>` and the finding's
-evidence carried verbatim. Severity says how bad; scope says whose PR.
+`/pr-loop analyze` is the read-only entry point: run the analyzer in section 3
+against the requested base/head, print its compact packet, and stop. It does not
+spawn an implementer or reviewer.
 
-Findings land in two places, never one — a full machine trace and a bounded
-human summary. Never write full findings prose into a PR comment.
+## 2. IMPLEMENT
 
-**Artifact (always, full detail).** Commit `tasks/reviews/pr<N>-r<K>.json` on
-the branch: the reviewer's findings array in the schema above, unchanged,
-plus the orchestrator's `route` tag per finding (`repair`|`debt`) and the
-round's `result` (`APPROVED`|`REQUEST_CHANGES`). This is the reproducible
-trace — every claim in the comment below must trace back to a line in it.
+Spawn an implementer subagent with worktree isolation on `task/<id>`. Its prompt
+contains only the full task block, the repo's failing-case-first rule, the current
+base reference, and this debt rule; do not send repository summaries it can read.
+It commits its work and reports new case ids plus fail-before/pass-after evidence.
 
-**Comment (bounded, exactly one, ≤40 lines):** `**pr-loop/reviewer — round
-<N>**` — result, H/M/L counts, blocking findings as `id — one-line claim`
-only (no evidence/repro prose), non-blocking ids listed flat, the gate line,
-and the artifact path. Nothing else reaches the PR as reviewer chatter.
+**Debt rule:** adjacent bugs, refactors, and missing coverage outside acceptance
+are not implemented here. Add a task under `## Debt` in `tasks/TODO.md` with an
+`Origin:` and stay on spec.
 
-Then update the PR body (the rolling evidence pack — see **PR body**, below)
-with this round's line.
+## 3. ANALYZE / PONYTAIL PREFLIGHT (deterministic, zero model calls)
 
-- Any `repair` finding → REPAIR.
-- None (only `debt`/LOW) → reviewer states APPROVED → EVIDENCE.
+Run after implementation and again after any base sync that changes the task diff:
 
-### 5. REPAIR
-Relay the `repair` findings verbatim to the implementer (same subagent via
-SendMessage if alive, else a fresh one on the same worktree branch). Hard
-rule: **every confirmed repair finding becomes a failing case in the repo's
-gate suite before it is fixed** — watch it fail, then fix. A finding the
-implementer rejects gets a one-line written reason; the reviewer sees it next
-round.
-
-Resolutions land the same split way:
-
-**Artifact (always, full detail).** Commit
-`tasks/reviews/pr<N>-r<K>-resolution.json` — one entry per finding id:
-`fixed` (+ the eval/case id that now covers it), `rejected` (+ the one-line
-reason), or `debt` (+ the T-id it became).
-
-**Comment (bounded, exactly one, ≤40 lines):** `**pr-loop/implementer —
-round <N>**` — resolved/rejected/debt-logged counts, up to 5 bullets of
-material changes, one verification line (the command that shows the fix),
-and the resolution artifact path.
-
-Then → GATE, which updates the PR body with the round's result line.
-
-**Circuit breaker:** after 3 review rounds without approval, or any
-implementer/reviewer deadlock on a finding, stop — do not loop forever. Post
-one escalation comment (`**pr-loop/orchestrator — circuit breaker**`, ≤40
-lines, one compact block): breaker state · open H/M/L counts · the one
-blocker finding (id + one line + the key number — the single finding
-actually stalling merge, not a list) · structural findings if any (one line
-each) · Options A (one more bounded round) / B (merge with the finding
-logged as named debt) · a recommendation. The human must be able to decide
-from this block alone, with no other comment or artifact read required —
-relay the same block to the human directly, don't just post and wait.
-
-### 6. EVIDENCE
-Reviewer approved. Do one last freshness sync (the base may have moved during
-the final round) — if it brings changes, GATE again before finalizing; a PR
-handed to the human must be `mergeable` against its current base. Then finalize
-the rolling PR body: set **Decision** to `awaiting human`, drop resolved findings from "Important failures
-discovered" (it lists current material findings, not history), confirm the
-gate line reflects the last green run, and fill in **Verification** (the
-one command a human can run to see it work) and **Debt logged** (T-ids
-created this task, or `none`) — both were live-updatable earlier but must
-be correct and present by this state.
-
-Append one line to `tasks/pr-loop-ledger.jsonl` (the workflow's own
-eval — commit it with the branch):
-
-```json
-{"task":"T10","date":"YYYY-MM-DD","rounds":2,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"repaired":2,"rejected":1,"debt_logged":1,"gate_failures":1,"human_interventions":0}
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/analyze.py \
+  --base "origin/<base>" --head "<task-branch>" \
+  --output "/tmp/pr-loop-<task>-analysis.json"
 ```
 
-Notify the human: task id, PR link, one-line summary. **You do not merge.**
+The analyzer reads the diff once and consumes `graphify-out/graph.json` when it
+already exists. It **never triggers Graphify extraction**; missing graph evidence
+falls back honestly to changed files. Its packet contains changed surface, risk,
+Ponytail questions, direct impacted nodes, review mode, targets, and a bounded
+context-file allowlist.
+
+Resolve every `preflight.question` before GATE. Ask the implementer to either
+`reused` existing/stdlib code or `justified` the new file, dependency, or
+abstraction with one concrete reason. Put the answers in a scratch JSON object
+keyed by question id and then by every listed file, then enforce them:
+
+```json
+{"new-source-surface":{"files":{
+  "src/new_module.py":{"outcome":"justified","reason":"first module for the accepted feature"}
+}}}
+```
+
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/analyze.py \
+  --base "origin/<base>" --head "<task-branch>" \
+  --resolutions "/tmp/pr-loop-<task>-preflight.json" --require-preflight \
+  --output "/tmp/pr-loop-<task>-analysis.json"
+```
+
+Exit 3 means at least one listed file lacks a resolution and returns directly to
+the implementer without spending a reviewer call.
+New surface may remain when justified; preflight is a decision gate, not a ban.
+
+## 4. GATE (deterministic, zero model calls)
+
+**Freshness first, every time.** Obtain the actual PR base with
+`gh pr view --json baseRefName` (before the PR exists, use the branch the task was
+cut from), fetch it, and merge `origin/<base>` into the task branch — never rebase.
+Text conflicts return to the implementer. Check semantic collisions Git misses:
+ADR numbers, task ids, case ids, and TODO blocks. If syncing changed the task diff,
+rerun ANALYZE/PREFLIGHT before continuing.
+
+Run the commands in the repo's `## Gate` section, in order, and judge them by its
+stated thresholds. No Gate section means stop and ask the human. A red gate goes
+straight to REPAIR with raw output; **never spend a reviewer call on a red gate**.
+
+On the first green run, push and create the PR. Seed its rolling evidence body
+with gate, base, analysis mode/risk/context count, preflight status, and Decision:
+`in repair`. Never use an evidence placeholder.
+
+## 5. REVIEW (model call 1: adaptive falsification)
+
+Spawn the pr-reviewer with fresh context. Give it only:
+
+- the task block and acceptance criteria;
+- the green gate command/result;
+- the full analysis packet and preflight resolutions;
+- the branch diff.
+
+The packet selects depth. `focused` checks acceptance, invariants, and named
+targets over `review.context_files`. `full` audits the analyzer's impacted surface,
+not the repository. The reviewer may read outside the allowlist only after naming
+the missing file and why the packet is insufficient. Review order is acceptance →
+invariants/gate evidence → changed behavior → design.
+
+Reviewer response schema (one JSON object, no trailing status text):
+
+```json
+{"result":"APPROVED|REQUEST_CHANGES","findings":[
+  {"id":"R1","severity":"HIGH|MEDIUM|LOW","confidence":0.91,
+   "claim":"one sentence","evidence":"file:line + triggering state",
+   "repro":"command or case","acceptance":"what passing looks like"}
+]}
+```
+
+Route a finding to `repair` only when all are true: HIGH/MEDIUM, confidence
+`>= 0.80`, concrete evidence/repro, and it violates task acceptance, turns the
+gate red, or makes a published claim dishonest. Confidence `0.50–0.79` gets one
+`clarify` trip in the same repair batch; after VERIFY it either has new evidence
+or becomes debt. Lower confidence, LOW, and out-of-scope findings become Debt
+regardless of severity. Confidence never replaces evidence or scope.
+
+Commit `tasks/reviews/pr<N>-r1.json`: unchanged findings plus orchestrator `route`
+(`repair|clarify|debt`) and result. Post one reviewer comment, at most 40 lines:
+role header, result, H/M/L counts, blocking ids + one-line claims, clarify/debt ids,
+gate line, analysis mode/risk, artifact path. Do not paste evidence prose.
+
+No `repair` or `clarify` findings → EVIDENCE. Otherwise → REPAIR.
+
+## 6. REPAIR (one batched implementer handoff)
+
+Send all `repair` and `clarify` findings together. Every confirmed repair finding
+first becomes a failing gate case; watch it fail, then fix it. A rejection gets
+one sentence and concrete evidence. Clarifications answer the exact uncertainty;
+they do not invite a refactor.
+
+Commit `tasks/reviews/pr<N>-r1-resolution.json`, one entry per finding:
+`fixed` + case id, `rejected` + reason/evidence, `clarified` + evidence, or `debt`
++ task id. Post one implementer comment (at most 40 lines): counts, up to five
+material bullets, verification command, artifact path. Then rerun PREFLIGHT and
+GATE. A red gate returns to this same repair step without calling the reviewer.
+
+## 7. VERIFY (model call 2: delta only)
+
+Give the reviewer only standing finding records, their routes, resolutions, newly
+added case evidence, and the repair diff. Do not include the original full PR diff
+or ask whether the whole PR is good. It returns one JSON object:
+
+```json
+{"result":"APPROVED|OPEN","verifications":[
+  {"id":"R1","status":"VERIFIED|OPEN|DEBT","confidence":0.96,
+   "evidence":"why the resolution meets or misses acceptance"}
+],"new_findings":[]}
+```
+
+For a `clarify` record, no new evidence means `DEBT`; `OPEN` requires new concrete
+evidence and confidence at least 0.80. It may add a new finding only for a
+regression introduced by the repair diff, tagged `repair-regression`. An in-scope
+HIGH/MEDIUM `repair-regression` opens the circuit breaker when confidence is at
+least 0.80; lower-confidence or out-of-scope regressions become debt. Commit
+`tasks/reviews/pr<N>-r2-verification.json` and post one bounded reviewer round-2
+comment. APPROVED with all records verified/debt → EVIDENCE.
+
+Any open in-scope finding after call 2 opens the circuit breaker. Do not
+automatically start a third reviewer or implementer round. Post and relay one
+compact `**pr-loop/orchestrator — circuit breaker**` block: calls spent; the single
+stalling finding and key evidence; option A one more bounded repair/verification
+call; option B human disposition/debt; recommendation. The human must explicitly
+choose A before model-review call 3.
+
+## 8. EVIDENCE
+
+Do one last base freshness sync. If it changes the diff, rerun PREFLIGHT, GATE,
+and the analyzer. If risk or review targets materially expand, the circuit breaker
+asks the human whether to spend a bounded verification call; do not silently hand
+off stale review evidence. Require mergeability.
+
+Finalize the PR body: Decision `awaiting human`, current material failures only,
+last green gate/base, runnable verification, debt ids, and review cost. Append one
+JSON line to `tasks/pr-loop-ledger.jsonl` and commit it:
+
+```json
+{"task":"T10","date":"YYYY-MM-DD","review_calls":2,"review_mode":"focused","review_input_tokens":null,"review_output_tokens":null,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"repaired":2,"rejected":0,"debt_logged":1,"gate_failures":1,"human_interventions":0}
+```
+
+Record actual token counts only when the runtime exposes them; otherwise `null`,
+never an estimate. Notify the human with task id, PR link, one-line summary, and
+review calls spent. You do not merge.
 
 ## PR body — rolling evidence pack
 
-The PR body is never a communication surface and never stale — the
-orchestrator rewrites it after every gate run and every review, starting at
-PR creation. Fixed template:
-
 ```markdown
 ## <task-id> — <goal, one line>
-<goal, second line — what "done" means>
+<what done means, one line>
 
-### Rounds
-Round 1: 2 HIGH / 1 MEDIUM / 0 LOW → repaired 3, rejected 0, debt 0
-Round 2: 1 HIGH / 4 MEDIUM / 3 LOW → repaired 7, rejected 0, debt 1
+### Verification
+- Gate: pass — <date>
+- Base: <base>@<sha> — mergeable
+- Analysis: <focused|full> — <risk> — <N> context files — graphify|changed-files
+- Preflight: pass — <N> resolved questions
+- Review: <calls used>/2 default calls — <current result>
+- Full trace: tasks/reviews/pr<N>-*.json
+- Reproduce: <one command>
+- Debt: <T-ids or none>
 
 ### Important failures discovered
-1. <one line, only material ones — in-scope HIGH/MEDIUM findings>
-2. <one line>
+1. <current in-scope material finding only, or none>
 
-**Gate**: pass — 2026-08-20
-**Base**: <base>@<sha> — synced round <N>, mergeable
-**Full trace**: tasks/reviews/pr<N>-r*.json
-**Verification**: <the one command a human can run to see it work>
-**Debt logged**: <T-ids created this task, or none>
-**Decision**: in repair
+**Decision**: in repair | awaiting human | merged
 ```
 
-Rounds accumulate (append, never rewrite); "Important failures discovered"
-is the *current* set of material findings, not a log — a repaired finding
-drops off the list rather than staying struck through. **Decision** is one
-of `in repair` (loop active, more rounds possible), `awaiting human`
-(reviewer approved, nothing left to automate), or `merged` (terminal).
-Nothing else lives in the body: no per-round narrative, no repair-history
-prose, no superseded numbers. That is the audit trail, and it lives in
-`tasks/reviews/`, never in the document a human reads to decide.
-
-## PR comment identity
-
-Every PR comment is posted by the same `gh` account, so the first line of
-each comment MUST declare the role — this is how the human tracks who said
-what:
+The body is current state, not history. Resolved findings disappear. Full review
+and repair history stays in committed artifacts. Every PR comment uses the shared
+account's explicit role identity and is at most 40 lines:
 
 ```
-**pr-loop/reviewer — round <N>**      bounded summary, ≤40 lines → tasks/reviews/pr<N>-r<K>.json
-**pr-loop/implementer — round <N>**   bounded resolution, ≤40 lines → tasks/reviews/pr<N>-r<K>-resolution.json
-**pr-loop/orchestrator — circuit breaker**   escalation block only — every other orchestrator update is a PR body edit, not a comment
+**pr-loop/reviewer — round <N>**
+**pr-loop/implementer — round <N>**
+**pr-loop/orchestrator — circuit breaker**
 ```
-
-One comment per role per round, always tagged, always ≤40 lines. The PR body
-carries the rolling evidence pack; comments never repeat what the body or the
-artifacts already say.
 
 ## tasks/TODO.md format
 
-TODO.md is the WORKING SET only — two sections, one shared id sequence
-(`T<N>` by convention; any letter-prefix id like `M8` works — legacy
-milestone ids keep their names):
-
-- `## Queue` — runnable work, in priority order.
-- `## Debt` — findings and overflow logged by pr-loop runs; same block format
-  plus `Origin:`. Promoting debt = moving the block into Queue.
-
-Merged work leaves TODO.md entirely: the block is replaced by a one-liner in
-**`tasks/DONE.md`** (`- <id> — <title> (<merge date>) — <refs>`). The
-narrative already lives in the ADRs/PR and the ledger; DONE.md is an index,
-not an archive. ready.py reads DONE.md ids when resolving `Depends:`.
+TODO.md has only `## Queue` and `## Debt`, sharing one id sequence. Promotion
+moves a Debt block to Queue. Merged blocks leave TODO.md for DONE.md.
 
 ```markdown
 ### T10 — <title>            [status: todo|in-progress|pr|done]
-Depends: T3, T7        (optional — task ids that must be done first)
-Origin: PR #12 R12     (debt blocks only — which PR/finding produced it)
-Spec: what and why, 2-5 lines.
-Acceptance: gateable criteria — eval cases, invariants, or a runnable check.
+Depends: T3, T7        (optional)
+Origin: PR #12 R12     (debt only)
+Spec: what and why, 2–5 lines.
+Acceptance: gateable criteria.
 Out of scope: (optional)
 ```
 
-ready.py lists every Queue task whose deps are all done — open one pr-loop
-session per ready task; the `task/<id>` worktree branches keep parallel runs
-isolated. Update the `status` field at each transition (in-progress at
-IMPLEMENT, pr at EVIDENCE; after the human merges, the next pr-loop run's
-housekeeping moves the block to DONE.md).
+Update status at transitions: `in-progress` at IMPLEMENT, `pr` at EVIDENCE.

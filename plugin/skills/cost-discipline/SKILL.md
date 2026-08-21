@@ -26,3 +26,7 @@ The assignment grades cost/latency judgment explicitly. Default posture:
    not from guesses.
 6. Latency: batch what can be batched; parallelize I/O-bound stages; never
    parallelize paid calls without a semaphore.
+7. **Verification has a call budget too.** Deterministically compute change
+   surface and impact before model review, batch repair findings, and verify only
+   the repair delta. Default pr-loop budget is two reviewer calls; record actual
+   reviewer tokens when available and never estimate missing usage.

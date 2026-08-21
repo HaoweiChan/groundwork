@@ -1,0 +1,12 @@
+{
+  "id": "pr-loop-review-confidence-routing",
+  "task": "pr_loop_analysis",
+  "suites": ["fast", "invariant"],
+  "input": {
+    "protocol_check": "review-confidence"
+  },
+  "expect": {
+    "approval_threshold": "0.50",
+    "routes": ["repair", "clarify", "debt"]
+  }
+}

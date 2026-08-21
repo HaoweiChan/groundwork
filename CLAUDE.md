@@ -81,14 +81,16 @@ python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/ready.py   # unblocked task
 
 For a full tasks/TODO.md task that should end in a PR, run the loop through
 **/pr-loop <task-id>** (or `/pr-loop next`) instead: one orchestrator session
-drives implement → gate → review → repair with subagents (implementer in a
-worktree, pr-reviewer with fresh context); the human only writes the spec and
-merges. A finding blocks only if it breaks the task's acceptance criteria,
-the gate, or the honesty of a published claim — everything else becomes a
-Debt task, not another round (groundwork GW-002). The PR carries role-tagged structured
-findings and an evidence pack — never agent chatter. Independent tasks
+drives implement → deterministic analysis/Ponytail preflight → gate → adaptive
+review → batched repair → delta verification. The default budget is two reviewer
+calls; a third needs explicit human approval (groundwork GW-009). A finding blocks
+only if it is in scope, evidence-backed, and confidence ≥0.80 — everything else
+becomes Debt, not another round. The PR carries role-tagged structured findings
+and an evidence pack, never agent chatter. Independent tasks
 (`Depends:` satisfied — the plugin's `ready.py` lists them) can run as parallel pr-loop
 sessions. Protocol: `plugin/skills/pr-loop/SKILL.md`.
+
+`/pr-loop analyze` produces the read-only review plan without starting delivery.
 
 ## Adding a task
 
