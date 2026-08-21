@@ -1,8 +1,9 @@
 # GW-012 — pr-loop keeps its orchestrator on the frontier tier
 Status: accepted · 2026-08-21 · Amends: GW-011
 
-**Ruling**: Run the pr-loop orchestrator on Opus in Claude Code or
-`gpt-5.6-sol` in Codex; economy routing applies only to bounded subagents.
+**Ruling**: Run the pr-loop orchestrator at Opus-level or stronger in Claude Code
+or Sol-level or stronger in Codex; economy routing applies only to bounded
+subagents.
 **Because**: the orchestrator integrates incomplete evidence, detects risk,
 routes models, and controls circuit breakers across the entire delivery state.
 **Enforced by**: `plugin/tests/test_plugin_contracts.py`; repeated pr-loop
@@ -19,12 +20,13 @@ circuit breaker before any executable gate could catch the coordination error.
 
 ## Decision
 
-- The Claude Code orchestrator runs on the `opus` alias.
-- The Codex orchestrator runs on `gpt-5.6-sol`.
-- The orchestrator confirms its effective model before entering SPEC, every later
-  state transition, and every subagent spawn. A changed or economy model stops and
-  asks the human to switch or restart; a hidden model signal requires confirmation.
-- Only spawned, bounded roles use Sonnet, Terra, or Luna routing.
+- The Claude Code orchestrator runs at Opus-level or stronger.
+- The Codex orchestrator runs at Sol-level or stronger.
+- The orchestrator confirms its capability tier before entering SPEC, every later
+  state transition, and every subagent spawn. A changed or economy tier stops and
+  asks the human to switch or restart. A hidden exact model ID does not block when
+  the tier is known through host state or human confirmation.
+- Only spawned, bounded roles use Sonnet-, Terra-, or Luna-level routing.
 - The ledger stores every model-floor checkpoint in `orchestrator_checks`, separate
   from every subagent attempt in `model_routes`.
 
@@ -37,5 +39,6 @@ circuit breaker before any executable gate could catch the coordination error.
 
 ## Runtime evidence
 
-OpenAI documents `gpt-5.6-sol` as its frontier model for complex professional
-work: https://developers.openai.com/api/docs/models/gpt-5.6-sol
+Current model catalogs are runtime evidence, not a permanent allowlist:
+https://platform.claude.com/docs/en/about-claude/models/overview and
+https://developers.openai.com/api/docs/models

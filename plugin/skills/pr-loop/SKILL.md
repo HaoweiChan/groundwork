@@ -11,24 +11,30 @@ budget, and the evidence ledger. The human invokes the loop and merges the PR.
 
 ### Orchestrator model floor
 
-The orchestrator is never model-routed downward:
+The orchestrator is never model-routed downward. The contract is capability-
+based, never a product/version allowlist:
 
-- Claude Code orchestrator: `opus`.
-- Codex orchestrator: `gpt-5.6-sol`.
+- Claude Code: `opus-level or stronger`.
+- Codex: `sol-level or stronger`.
 
-Model routing is subagent-only. Before SPEC, confirm the effective host model
-and re-confirm it before every later state transition and every subagent spawn.
-If the orchestrator changes model, or is running on Sonnet, Terra, Luna, or
-another economy tier, stop and ask the human to switch/restart on the listed
-frontier model; do not begin or continue the state machine. If the runtime hides
-the effective model at any checkpoint, stop for human confirmation instead of
-assuming the session is still frontier. No task size, risk class, budget pressure,
-or retry permits an economy orchestrator.
+A newer or stronger tier always satisfies the floor; for example, a tier above
+Opus is valid. Do not require a particular model ID or version.
+
+Model routing is subagent-only. Confirm the host capability tier before SPEC and
+re-confirm it before every later state transition and every subagent spawn. If
+the orchestrator changes to Sonnet-level, Terra-level, Luna-level, or another
+lower tier, stop and ask the human to switch/restart at the required level; do
+not begin or continue the state machine. The exact model ID may be unavailable:
+use exposed tier metadata, the host session selector, or
+human confirmation as capability evidence. Ask only when the tier itself is
+unknown, never merely because the versioned ID is hidden. No task size, risk
+class, budget pressure, or retry permits an economy orchestrator.
 
 The orchestrator MUST append every passed check to `orchestrator_checks` in the
-evidence ledger with `checkpoint`, `requested`, `effective`, `verified_at`, and
-`outcome`. Keep this trace separate from subagent `model_routes`; never collapse
-it to the initially selected model.
+evidence ledger with `checkpoint`, `requested`, `effective`, `evidence`,
+`verified_at`, and `outcome`. `effective` is `null` when the exact model ID is
+hidden. Keep this trace separate from subagent `model_routes`; never collapse it
+to the initially selected model.
 
 ```
 SPEC → IMPLEMENT → ANALYZE/PREFLIGHT → GATE → REVIEW
@@ -58,16 +64,20 @@ a cost control, never a substitute for the gate or actor/reviewer separation.
 
 | Work | Claude Code | Codex |
 |---|---|---|
-| Mechanical, low-risk, tightly specified | `sonnet` | `gpt-5.6-luna` |
-| Ordinary implementation, focused review, delta verification | `sonnet` | `gpt-5.6-terra` |
-| High-risk/full review, cross-cutting design, security/safety, spec ambiguity, or a failed smaller-model attempt | `opus` | `gpt-5.6-sol` |
+| Mechanical, low-risk, tightly specified | `sonnet-level` | `luna-level` |
+| Ordinary implementation, focused review, delta verification | `sonnet-level` | `terra-level` |
+| High-risk/full review, cross-cutting design, security/safety, spec ambiguity, or a failed smaller-model attempt | `opus-level or stronger` | `sol-level or stronger` |
 
-Use explicit frontier aliases for every high-risk condition in the last row;
-never use `inherit` or an unspecified host default as a synonym for frontier. Set
-the model on each Claude Agent or Codex subagent invocation. If an organization
-override or availability rule prevents an economy model, use the host default and
-record the substitution. If it prevents the explicit frontier model for high-risk
-work, stop for human routing instead of silently continuing on an economy model.
+Resolve each level to a currently supported host model when spawning; model IDs
+and versions are runtime data, not policy. Use an explicit high-capability model
+for every condition in the last row; never use `inherit` or an unspecified host
+default as a synonym for the required level. Any fallback must meet or exceed the
+requested capability level; choose the least expensive known adequate substitute
+and record it. If no such tier is available or its capability is unknown, stop for
+human routing. Before a high-risk subagent begins, confirm the effective
+capability tier for every high-capability route using host metadata, the resolved
+host mapping, organization policy, or human confirmation. If that tier is unknown,
+stop for human routing; a hidden exact model ID alone is not a reason to stop.
 All Codex implementer and reviewer spawns still use `fork_turns: "none"`; model
 routing never relaxes worktree isolation, bounded context, call budgets, or the
 independent-review contract.
@@ -100,9 +110,10 @@ dependency manifests, and an existing Graphify graph when present. Do not wait f
 the implementation diff. Treat authentication/authorization, security/privacy,
 payments, destructive operations, migrations, public schemas/APIs, concurrency,
 shared infrastructure, cross-cutting changes, and unclear acceptance as high risk.
-Unknown initial risk uses the explicit frontier model. Record the evidence and
-classification in the first model route entry. The later deterministic analyzer
-supersedes this preliminary classification for review and verification routing.
+Unknown initial risk uses the explicit high-capability level. Record the evidence
+and classification in the first model route entry. The later deterministic
+analyzer supersedes this preliminary classification for review and verification
+routing.
 
 Before spawning, create or attach a real task worktree from the repository root.
 Use an explicit absolute path outside the orchestrator checkout:
@@ -281,17 +292,18 @@ last green gate/base, runnable verification, debt ids, and review cost. Append o
 JSON line to `tasks/pr-loop-ledger.jsonl` and commit it:
 
 ```json
-{"task":"T10","date":"YYYY-MM-DD","orchestrator_checks":[{"checkpoint":"SPEC","requested":"gpt-5.6-sol","effective":"gpt-5.6-sol","verified_at":"2026-08-21T12:00:00Z","outcome":"confirmed"},{"checkpoint":"REVIEW","requested":"gpt-5.6-sol","effective":"gpt-5.6-sol","verified_at":"2026-08-21T12:10:00Z","outcome":"confirmed"}],"review_calls":2,"review_mode":"focused","model_routes":[{"role":"implementer","attempt":1,"requested":"gpt-5.6-terra","effective":"gpt-5.6-terra","risk":"ordinary","reason":"bounded task; no initial high-risk signals","outcome":"completed"},{"role":"review","attempt":1,"requested":"gpt-5.6-terra","effective":"gpt-5.6-terra","risk":"medium/focused","reason":"analysis packet selected focused review","outcome":"completed"}],"review_input_tokens":null,"review_output_tokens":null,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"repaired":2,"rejected":0,"debt_logged":1,"gate_failures":1,"human_interventions":0}
+{"task":"T10","date":"YYYY-MM-DD","orchestrator_checks":[{"checkpoint":"SPEC","requested":"sol-level+","effective":null,"evidence":"host session selector","verified_at":"YYYY-MM-DDTHH:MM:SSZ","outcome":"confirmed"},{"checkpoint":"REVIEW","requested":"sol-level+","effective":null,"evidence":"unchanged host session selector","verified_at":"YYYY-MM-DDTHH:MM:SSZ","outcome":"confirmed"}],"review_calls":2,"review_mode":"focused","model_routes":[{"role":"implementer","attempt":1,"requested":"terra-level","effective":null,"evidence":"host mapping confirmed terra-level","risk":"ordinary","reason":"bounded task; no initial high-risk signals","outcome":"completed"},{"role":"review","attempt":1,"requested":"terra-level","effective":null,"evidence":"host mapping confirmed terra-level","risk":"medium/focused","reason":"analysis packet selected focused review","outcome":"completed"}],"review_input_tokens":null,"review_output_tokens":null,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"repaired":2,"rejected":0,"debt_logged":1,"gate_failures":1,"human_interventions":0}
 ```
 
 Record actual token counts only when the runtime exposes them; otherwise `null`,
 never an estimate. Record every spawn attempt in `model_routes`, including failed
 or substituted attempts; never collapse a retry into one final model value. Each
 entry has `role`, `attempt`, `requested`, `effective` (or `null` when the runtime
-does not expose it), `risk`, `reason`, and `outcome`. A reviewer invocation counts
+does not expose it), `evidence` for the effective capability level, `risk`,
+`reason`, and `outcome`. A reviewer invocation counts
 toward the review-call budget even when it fails, returns invalid output, or is
-retried on a frontier model. Notify the human with task id, PR link, one-line
-summary, and review calls spent. You do not merge.
+retried at the high-capability level. Notify the human with task id, PR link,
+one-line summary, and review calls spent. You do not merge.
 
 ## PR body — rolling evidence pack
 

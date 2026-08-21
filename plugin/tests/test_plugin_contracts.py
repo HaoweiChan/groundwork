@@ -100,16 +100,30 @@ class PluginContractTests(unittest.TestCase):
 
 
 class PrLoopModelPolicyTests(unittest.TestCase):
+    versioned_model_id = re.compile(
+        r"\b(?:gpt-\d+(?:\.\d+)*(?:-[a-z0-9-]+)?|claude-[a-z0-9-]*\d[a-z0-9-]*)\b",
+        re.IGNORECASE,
+    )
+
     @classmethod
     def setUpClass(cls):
         cls.skill = (PLUGIN / "skills" / "pr-loop" / "SKILL.md").read_text()
+        policy_paths = (
+            ROOT / "README.md",
+            ROOT / "CLAUDE.md",
+            ROOT / "docs" / "groundwork.md",
+            ROOT / "docs" / "decisions" / "GW-011-route-subagents-by-task-risk.md",
+            ROOT / "docs" / "decisions" / "GW-012-frontier-orchestrator.md",
+            ROOT / "docs" / "decisions" / "GW-014-capability-level-model-routing.md",
+        )
+        cls.model_policy = "\n".join(path.read_text() for path in policy_paths)
 
     def test_routes_every_subagent_to_the_least_expensive_adequate_model(self):
         self.assertIn("model-routing decision before every subagent spawn", self.skill)
-        self.assertIn("`sonnet`", self.skill)
-        self.assertIn("`gpt-5.6-terra`", self.skill)
-        self.assertIn("`gpt-5.6-luna`", self.skill)
-        self.assertIn("Use explicit frontier aliases for every high-risk condition", self.skill)
+        self.assertIn("`sonnet-level`", self.skill)
+        self.assertIn("`terra-level`", self.skill)
+        self.assertIn("`luna-level`", self.skill)
+        self.assertIn("Resolve each level to a currently supported host model", self.skill)
         self.assertIn('"model_routes":[{"role":"implementer"', self.skill)
 
     def test_initial_risk_screen_precedes_implementer_spawn(self):
@@ -122,14 +136,40 @@ class PrLoopModelPolicyTests(unittest.TestCase):
             "task block and acceptance criteria",
             "repository contracts/instructions",
             "existing Graphify graph",
-            "Unknown initial risk uses the explicit frontier model",
+            "Unknown initial risk uses the explicit high-capability level",
         ):
             self.assertIn(phrase, self.skill)
 
-    def test_frontier_aliases_are_explicit(self):
-        self.assertIn("`opus`", self.skill)
-        self.assertIn("`gpt-5.6-sol`", self.skill)
+    def test_capability_levels_are_explicit(self):
+        self.assertIn("`opus-level or stronger`", self.skill)
+        self.assertIn("`sol-level or stronger`", self.skill)
         self.assertNotIn("host frontier/default", self.skill)
+
+    def test_model_floor_uses_capability_levels_not_version_ids(self):
+        """invariant-gap: model releases must not invalidate the capability floor."""
+        self.assertIn("`opus-level or stronger`", self.skill)
+        self.assertIn("`sol-level or stronger`", self.skill)
+        self.assertIn("A newer or stronger tier always satisfies the floor", self.skill)
+        self.assertRegex(self.skill, r"exact model ID\s+may be unavailable")
+        self.assertIn("Ask only when the tier itself is", self.skill)
+        self.assertIn("never merely because the versioned ID is hidden", self.skill)
+        self.assertNotRegex(
+            self.skill + self.model_policy,
+            self.versioned_model_id,
+        )
+
+    def test_versioned_model_guard_covers_both_hosts(self):
+        for model_id in ("gpt-5.6-sol", "claude-opus-4-1"):
+            with self.subTest(model_id=model_id):
+                self.assertRegex(model_id, self.versioned_model_id)
+
+    def test_fallback_and_high_risk_routes_preserve_capability_floors(self):
+        for phrase in (
+            r"fallback must meet or exceed the\s+requested capability level",
+            r"confirm the effective\s+capability tier for every high-capability route",
+            r"If that tier is unknown,\s+stop for human routing",
+        ):
+            self.assertRegex(self.skill, phrase)
 
     def test_route_attempts_and_failures_are_recorded(self):
         for field in (
@@ -143,8 +183,8 @@ class PrLoopModelPolicyTests(unittest.TestCase):
         )
 
     def test_orchestrator_remains_frontier(self):
-        self.assertIn("Claude Code orchestrator: `opus`", self.skill)
-        self.assertIn("Codex orchestrator: `gpt-5.6-sol`", self.skill)
+        self.assertIn("Claude Code: `opus-level or stronger`", self.skill)
+        self.assertIn("Codex: `sol-level or stronger`", self.skill)
         self.assertIn("Model routing is subagent-only", self.skill)
         self.assertIn("stop and ask the human to switch/restart", self.skill)
         self.assertIn('"orchestrator_checks":[{"checkpoint":"SPEC"', self.skill)
@@ -154,9 +194,9 @@ class PrLoopModelPolicyTests(unittest.TestCase):
             "re-confirm it before every later state transition and every subagent spawn",
             self.skill,
         )
-        self.assertIn("If the orchestrator changes model", self.skill)
-        self.assertIn("do not begin or continue the state machine", self.skill)
-        for field in ("`orchestrator_checks`", "`checkpoint`", "`verified_at`"):
+        self.assertRegex(self.skill, r"If\s+the orchestrator changes to")
+        self.assertRegex(self.skill, r"do\s+not begin or continue the state machine")
+        for field in ("`orchestrator_checks`", "`checkpoint`", "`evidence`", "`verified_at`"):
             self.assertIn(field, self.skill)
         self.assertIn("MUST append every passed check to `orchestrator_checks`", self.skill)
         self.assertNotRegex(

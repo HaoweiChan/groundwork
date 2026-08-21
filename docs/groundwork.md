@@ -100,19 +100,22 @@ verifies only standing findings plus the repair diff. A third call requires an
 explicit human choice (GW-009).
 
 Before every subagent spawn, the orchestrator also chooses the least expensive
-adequate model (GW-011): Sonnet for bounded Claude work, Luna for mechanical Codex
-work, and Terra for ordinary Codex implementation/focused verification. High-risk
-or full review, cross-cutting design, security/safety impact, ambiguity, and a
-failed smaller-model attempt explicitly use Opus on Claude or Sol on Codex. An
+adequate capability level (GW-011, GW-014): Sonnet-level for bounded Claude work,
+Luna-level for mechanical Codex work, and Terra-level for ordinary Codex
+implementation/focused verification. High-risk or full review, cross-cutting
+design, security/safety impact, ambiguity, and a failed smaller-model attempt
+require Opus-level or stronger on Claude and Sol-level or stronger on Codex. An
 initial task/repository risk screen protects the pre-diff implementer spawn. The
 ledger records every attempt and substitution; model routing does not change
 isolation, gates, or call limits.
 
-The orchestrator is outside that routing table (GW-012). It remains on Opus in
-Claude Code or Sol in Codex because it owns global risk classification, state
-transitions, budgets, and circuit breakers. An economy-model parent stops before
-SPEC—or at any later model checkpoint—and asks the human to switch or restart.
-Every check is recorded separately from subagent model routes.
+The orchestrator is outside that routing table (GW-012, GW-014). It stays at
+Opus-level or stronger in Claude Code and Sol-level or stronger in Codex because
+it owns global risk classification, state transitions, budgets, and circuit
+breakers. Newer stronger tiers qualify automatically. A lower-tier parent stops
+before SPEC—or at any later model checkpoint—and asks the human to switch or
+restart. A hidden exact model ID is not itself a stop when the capability tier is
+known. Every check is recorded separately from subagent model routes.
 
 The PR is an **evidence ledger**, not a communication bus: bounded role-tagged
 comments, committed JSON findings, and a current evidence body. The metrics line

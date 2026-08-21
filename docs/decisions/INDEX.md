@@ -14,6 +14,7 @@ their file is kept for history but the ruling to follow is the amending one.
 - GW-008 — report history is one line per run; full dumps only when they earn it — enforced by `evals/run.py` report-write logic; invariant-suite case in descendant repos with an eval harness
 - GW-009 — pr-loop plans review deterministically and defaults to two model review calls — enforced by `plugin/tests/test_analyze.py` and pr-loop ANALYZE/REVIEW/VERIFY — *amended by GW-011*
 - GW-010 — one `plugin/` root supports Claude Code and Codex with role parity — enforced by `plugin/tests/test_plugin_contracts.py` and both plugin validators
-- GW-011 — pr-loop routes bounded work to the least expensive adequate subagent model — enforced by `plugin/tests/test_plugin_contracts.py` and the evidence ledger — *amended by GW-012*
-- GW-012 — pr-loop keeps its orchestrator on Opus/Sol and routes only bounded subagents downward — enforced by `plugin/tests/test_plugin_contracts.py` and `orchestrator_checks`
+- GW-011 — pr-loop routes bounded work to the least expensive adequate subagent model — enforced by `plugin/tests/test_plugin_contracts.py` and the evidence ledger — *amended by GW-012, GW-014*
+- GW-012 — pr-loop keeps its orchestrator at the high-capability floor and routes only bounded subagents downward — enforced by `plugin/tests/test_plugin_contracts.py` and `orchestrator_checks` — *amended by GW-014*
 - GW-013 — root evals/src/specs stay clean project seed material; Groundwork self-tests live in plugin/tests — enforced by `plugin/tests/test_repository_boundary.py` and source-repo hooks
+- GW-014 — model routing names capability floors, not product versions; newer stronger tiers qualify automatically — enforced by `plugin/tests/test_plugin_contracts.py` and pr-loop model checkpoints

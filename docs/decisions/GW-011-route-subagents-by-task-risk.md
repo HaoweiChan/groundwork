@@ -2,8 +2,9 @@
 Status: accepted · 2026-08-21 · Amends: GW-009
 
 **Ruling**: Before every subagent spawn, route bounded low/ordinary-risk work
-to Sonnet on Claude Code or Luna/Terra on Codex; explicitly request Opus or Sol
-for high-risk, full-review, cross-cutting, security/safety, or ambiguous work.
+to Sonnet-level on Claude Code or Luna-/Terra-level on Codex; require
+Opus-level or stronger / Sol-level or stronger for high-risk, full-review,
+cross-cutting, security/safety, or ambiguous work.
 **Because**: role isolation and executable gates carry correctness, so routine
 bounded work should not automatically pay frontier-model cost.
 **Enforced by**: `plugin/tests/test_plugin_contracts.py`;
@@ -25,14 +26,17 @@ The orchestrator makes a visible routing choice before each spawn. Before the
 first implementer it screens the task, acceptance, referenced paths, repo
 contracts, dependency manifests, and any existing graph; unknown risk is high:
 
-- Claude Code uses Sonnet for mechanical, ordinary, and bounded work.
-- Codex uses Luna for mechanical low-risk work and Terra for ordinary
+- Claude Code uses Sonnet-level models for mechanical, ordinary, and bounded work.
+- Codex uses Luna-level for mechanical low-risk work and Terra-level for ordinary
   implementation, focused review, and delta verification.
-- Opus on Claude Code and `gpt-5.6-sol` on Codex remain mandatory for high-risk/full review,
-  cross-cutting design, security or safety impact, unclear acceptance, and retry
-  after a smaller model fails its bounded contract.
-- An unavailable economy tier may fall back to the host default and is recorded.
-  An unavailable explicit frontier tier stops for human routing.
+- Opus-level or stronger on Claude Code and Sol-level or stronger on Codex remain
+  mandatory for high-risk/full review, cross-cutting design, security or safety
+  impact, unclear acceptance, and retry after a smaller model fails its bounded
+  contract.
+- An unavailable tier may fall back only to a known model at or above the
+  requested capability level. Otherwise the loop stops for human routing.
+- Every high-capability route needs evidence of its effective capability tier;
+  a hidden exact model ID is acceptable, but an unknown tier is not.
 - The ledger records every requested/effective model, reason, risk, outcome, and
   failed or substituted retry. A failed reviewer attempt still consumes a call.
   Model selection never changes the two-call budget, fresh-context rule, worktree
@@ -45,13 +49,12 @@ contracts, dependency manifests, and any existing graph; unknown risk is high:
 - Evidence packs expose whether costly model use was justified.
 - Initial risk screening is conservative because implementation-time diff analysis
   cannot retroactively upgrade an implementer that already ran.
-- Host model names are explicit operational aliases and may require a later ADR
-  when either runtime changes its available tiers.
+- Capability levels remain stable when either runtime changes concrete model IDs;
+  the host resolves the current model only when spawning.
 
 ## Runtime evidence
 
-- Claude Code supports per-invocation subagent model aliases including `sonnet`
-  and `opus`: https://code.claude.com/docs/en/sub-agents
-- OpenAI identifies `gpt-5.6-terra` as the balance tier, `gpt-5.6-luna` as the
-  cost-sensitive tier, and `gpt-5.6-sol` as frontier:
+- Claude Code supports per-invocation subagent model selection:
+  https://code.claude.com/docs/en/sub-agents
+- OpenAI publishes its current model tiers at:
   https://developers.openai.com/api/docs/models
