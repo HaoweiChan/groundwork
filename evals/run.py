@@ -44,8 +44,11 @@ def git_info():
         sha = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
             capture_output=True, text=True, check=True).stdout.strip()
+        # exclude history.jsonl itself: writing it is what makes the tree
+        # dirty, so counting it here would self-taint every run forever.
         dirty = bool(subprocess.run(
-            ["git", "status", "--porcelain"], cwd=ROOT,
+            ["git", "status", "--porcelain", "--",
+             ".", ":(exclude)evals/report/history.jsonl"], cwd=ROOT,
             capture_output=True, text=True, check=True).stdout.strip())
         return sha, dirty
     except Exception:

@@ -65,3 +65,8 @@ a full-fidelity dump. Every one of those dumps also rode along in the PR diff.
   that's the case where "everything, in detail" is the point of the run.
 - Descendant repos that already accumulated large `evals/report/` trees may want
   a one-time prune pass, each recorded per item 4 above — not part of this ADR.
+- `.githooks/pre-commit` runs the gate itself, so its history line is written
+  by the working tree it's about to commit — that line is necessarily
+  unstaged and lands in the *following* commit, not the one it describes.
+  Acceptable: the line is a time-series sample, not evidence for the commit
+  it happens to precede.
