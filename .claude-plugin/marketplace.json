@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "groundwork",
-  "description": "Eval-first process layer for the agent era: cost-aware pr-loop, evidence-only review agents, eval discipline.",
+  "description": "Dual Claude Code/Codex eval-first process layer: cost-aware pr-loop, evidence-only review roles, eval discipline.",
   "owner": {
     "name": "Haowei Chan",
     "url": "https://github.com/HaoweiChan"
@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "groundwork",
-      "description": "Cost-aware pr-loop with deterministic change analysis and bounded delta review, four evidence-only review agents, eval/failure/cost skills, and /groundwork-init.",
+      "description": "Cost-aware pr-loop with deterministic change analysis, bounded delta review, four evidence roles, and groundwork-init.",
       "source": "./plugin",
       "category": "productivity"
     }

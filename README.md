@@ -4,9 +4,9 @@
 
 Agents write and maintain most of the code; what survives their handoffs is
 executable checks and enforcement, not prose. groundwork gives a project four
-layers — facts (`CLAUDE.md`), knowledge (skills), execution (review agents),
+layers — facts (`CLAUDE.md`/`AGENTS.md`), knowledge (skills), execution (review agents),
 enforcement (hooks) — plus an eval harness that IS the spec and a cost-aware
-`/pr-loop` delivery state machine. Before model review it builds deterministic
+`pr-loop` delivery state machine. Before model review it builds deterministic
 change intelligence from the diff and an existing Graphify graph, enforces a
 Ponytail surface preflight, and defaults to one adaptive review plus one delta
 verification instead of an open-ended implementer↔reviewer loop.
@@ -27,14 +27,17 @@ Then, before anything else:
 1. **Replace this README.** The README belongs to *your project* — what it
    is, how to run it. A project whose README still describes groundwork has
    no front door. The process doc you keep is `docs/groundwork.md`.
-2. Rewrite the project-specific parts of `CLAUDE.md` (name, Gate, layout).
+2. Rewrite the project-specific parts of `CLAUDE.md` or `AGENTS.md` (name, Gate, layout).
 3. Your decisions start at `specs/decisions/ADR-000` — the namespace is
    yours; groundwork's decisions stay in the groundwork repo as `GW-*`.
 
-## Brownfield — adopt groundwork in an existing repo
+## Install the plugin
 
-Install the plugin and run the initializer — it is additive and idempotent,
-and never touches your README, tests, or existing ADR numbering:
+Groundwork ships one process-layer plugin with manifests for both Claude Code
+and Codex. The initializer is additive and idempotent; it never touches your
+README, tests, or existing ADR numbering.
+
+### Claude Code
 
 ```
 /plugin marketplace add HaoweiChan/groundwork
@@ -42,15 +45,50 @@ and never touches your README, tests, or existing ADR numbering:
 /groundwork-init
 ```
 
-`/groundwork-init` scaffolds `tasks/` (pr-loop queue), a `## Gate` section in
-CLAUDE.md pointing at *your existing* test commands, optional git hooks, and
-a `.groundwork-version` marker. The pr-loop state machine runs against
-whatever gate your repo already has. `/pr-loop analyze` produces a read-only
-risk/impact/context packet without starting delivery or spending a reviewer call.
+### Codex
+
+```bash
+codex plugin marketplace add HaoweiChan/groundwork
+codex plugin add groundwork@groundwork
+```
+
+Start a new Codex task after installation, then invoke `$groundwork-init`.
+Codex loads the same skills and runs the four evidence roles through
+no-history subagents. Initializer files are bundled inside the installed plugin,
+so setup does not depend on the marketplace checkout remaining available. The
+package follows OpenAI's
+[Codex plugin structure](https://developers.openai.com/plugins/build/plugins#plugin-structure).
+
+The initializer scaffolds `tasks/` (pr-loop queue), a `## Gate` section in the
+host's project instruction file, optional enforcement hooks, and a
+`.groundwork-version` marker. The delivery loop runs against whatever gate the
+repo already has. On Codex, implementers work in a real Git worktree and
+reviewers receive only the bounded review packet; neither inherits the
+orchestrator's conversation.
+
+## Use it
+
+| Action | Claude Code | Codex |
+|---|---|---|
+| Deliver a task | `/pr-loop T10` | `$pr-loop T10` |
+| Deliver the next ready task | `/pr-loop next` | `$pr-loop next` |
+| Analyze without starting delivery | `/pr-loop analyze` | `$pr-loop analyze` |
+| Cold review | `cold-reviewer` agent | `$cold-reviewer` |
+
+`analyze` produces a read-only risk/impact/context packet without spending a
+reviewer call.
 
 ## Updating a project
 
-Skills and agents update through the plugin. Scaffold files (evals runner,
-hooks, `tasks/ready.py`) are yours after instantiation — pull upstream
-changes deliberately and bump `.groundwork-version`. Rationale is referenced
-(`GW-*` numbers), never copied into your `specs/decisions/`.
+For Claude Code, update the marketplace/plugin through its plugin manager. For
+Codex:
+
+```bash
+codex plugin marketplace upgrade groundwork
+codex plugin add groundwork@groundwork
+```
+
+Start a new task after updating so Codex reloads the skills. Scaffold files
+(eval runner, hooks, task queue) belong to the adopting repo after initialization;
+update them deliberately and bump `.groundwork-version`. Rationale is referenced
+(`GW-*` numbers), never copied into `specs/decisions/`.

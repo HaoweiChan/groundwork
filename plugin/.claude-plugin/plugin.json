@@ -1,7 +1,7 @@
 {
   "name": "groundwork",
-  "version": "0.4.0",
-  "description": "Eval-first process layer: cost-aware pr-loop (deterministic change analysis, Ponytail preflight, adaptive review, bounded delta verification), evidence-only review agents, eval/failure/cost skills, and /groundwork-init.",
+  "version": "0.5.0",
+  "description": "Eval-first process layer for Claude Code and Codex: cost-aware pr-loop, deterministic analysis, bounded delta verification, and independent evidence roles.",
   "author": {
     "name": "Haowei Chan",
     "url": "https://github.com/HaoweiChan"

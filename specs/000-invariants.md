@@ -39,3 +39,9 @@ Task-specific invariants live below a `## <task>` heading as tasks are added.
 ## INV-4: Reviewer output and post-VERIFY routing are deterministic
 - Rationale: invalid JSON or an unrouteable result costs manual recovery or another model call.
 - Enforced by: `pr-loop-review-protocol-envelope`
+
+## codex_plugin
+
+## INV-5: The distributable process layer installs on Claude Code and Codex without behavioral forks
+- Rationale: duplicated implementations or missing reviewer roles make verification depend on which host runs it.
+- Enforced by: `codex-plugin-package`, `codex-plugin-portability`, `codex-plugin-review-role-parity`, `codex-plugin-initializer-scaffold`, `codex-plugin-fresh-review-context`, `codex-plugin-worktree-isolation`

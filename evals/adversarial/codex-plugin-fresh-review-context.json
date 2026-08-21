@@ -1,0 +1,10 @@
+{
+  "id": "codex-plugin-fresh-review-context",
+  "task": "codex_plugin",
+  "suites": ["fast", "invariant"],
+  "input": {"check": "fresh_review_context"},
+  "expect": {
+    "role_skills_with_no_history": ["cold-reviewer", "eval-adversary", "pr-reviewer", "spec-drift"],
+    "pr_loop_review_no_history": true
+  }
+}

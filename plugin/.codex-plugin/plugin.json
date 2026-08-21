@@ -1,0 +1,27 @@
+{
+  "name": "groundwork",
+  "version": "0.5.0",
+  "description": "Eval-first delivery with cost-aware PR review, deterministic change analysis, and independent evidence roles.",
+  "author": {
+    "name": "Haowei Chan",
+    "url": "https://github.com/HaoweiChan"
+  },
+  "homepage": "https://github.com/HaoweiChan/groundwork",
+  "repository": "https://github.com/HaoweiChan/groundwork",
+  "keywords": ["evals", "pull-requests", "review", "agents"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Groundwork",
+    "shortDescription": "Eval-first, cost-aware PR delivery",
+    "longDescription": "Run eval-first implementation, deterministic change analysis, independent review, batched repair, and bounded delta verification.",
+    "developerName": "Haowei Chan",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/HaoweiChan/groundwork",
+    "defaultPrompt": [
+      "Run the next ready task through Groundwork.",
+      "Analyze this PR's risk and review context.",
+      "Cold-review the latest implementation change."
+    ]
+  }
+}

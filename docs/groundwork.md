@@ -29,7 +29,7 @@ Each layer answers one question. Nothing appears in two layers.
 
 | Layer | Lives in | Answers | Binding? |
 |---|---|---|---|
-| **Facts** | `CLAUDE.md` | What is invariantly true here? (structure, commands, hard rules) | advisory |
+| **Facts** | `CLAUDE.md` / `AGENTS.md` | What is invariantly true here? (structure, commands, hard rules) | advisory |
 | **Knowledge** | skills | How do we do X well? (loaded on demand, zero resident context) | advisory |
 | **Execution** | agents | Who checks the work? (fresh-context subagents, no author bias) | advisory |
 | **Enforcement** | `.claude/hooks/` + `.githooks/` | What can never happen? | **blocking** |
@@ -57,7 +57,9 @@ disabled silently; a hook versioned with the code cannot.
 
 ### The execution layer in practice
 
-Four standing subagents, all evidence-only (they may not fix anything):
+Four standing roles, all evidence-only (they may not fix anything). Claude Code
+loads them as native agents; Codex loads role skills that spawn a no-history
+subagent from the same canonical contract and only the bounded task packet:
 
 - `cold-reviewer` — cold-reads new code without the author's reasoning; its
   deliverable is the three most likely *silent* failure inputs.
@@ -75,7 +77,7 @@ failing eval case → implement (invariant hook watching) → cold review
 → findings become adversarial cases → eval gate green → commit
 ```
 
-## Delivery loop (/pr-loop)
+## Delivery loop (`/pr-loop` on Claude Code, `$pr-loop` on Codex)
 
 For a full task that ends in a PR, the human is not the message broker between
 an implementer session and a reviewer session. The orchestrator also prevents
@@ -108,21 +110,27 @@ if it breaks acceptance, the gate, or a published claim; blocking also needs
 concrete evidence and confidence at least 0.80; and repair is batched before
 one delta verification. Everything else becomes a **Debt** task in
 `tasks/TODO.md`. Task blocks carry `Depends:` so independent tasks can run
-as parallel pr-loop sessions on isolated `task/<id>` worktree branches — the
-plugin's `ready.py` lists what is unblocked. TODO.md stays small by design:
+as parallel pr-loop sessions on isolated `task/<id>` worktree branches. Codex
+creates the worktree before spawning an implementer and gives the implementer
+its absolute path as the mandatory working directory. The plugin's `ready.py`
+lists what is unblocked. TODO.md stays small by design:
 it holds only Queue and Debt; merged work becomes a one-liner in
 `tasks/DONE.md`, and agents read single task blocks, never the whole file.
 
 ## Repo map
 
-Skills and agents arrive through the **groundwork plugin** (`plugin/` in the
-groundwork repo, self-hosted marketplace); repo-local `.claude/skills/` and
-`.claude/agents/` hold only project-specific domain knowledge, which overrides
-the plugin on name collision.
+Skills and role contracts arrive through the dual-runtime **groundwork plugin**
+(`plugin/` in the groundwork repo). `.claude-plugin/` registers Claude Code;
+`.codex-plugin/` plus `.agents/plugins/marketplace.json` registers Codex. Repo-local
+skills/agents hold only project-specific domain knowledge and override the plugin
+on name collision. `plugin/assets/scaffold/` carries every file the initializer
+may seed, because installed plugins execute from a cache without access to the
+surrounding marketplace repository.
 
 ```
-CLAUDE.md            facts layer — working rules incl. the ## Gate section (AGENTS.md symlinks here)
+CLAUDE.md / AGENTS.md facts layer — working rules including the ## Gate section
 .claude/settings.json  hooks registration + plugin wiring (groundwork + ponytail)
+.agents/plugins/     Codex repo marketplace
 .claude/hooks/       post-edit invariant runner · session prompt logger
 .githooks/           pre-commit eval gate (installed via core.hooksPath)
 tasks/               TODO.md (Queue / Debt — working set) + DONE.md (one-line merged index)
@@ -167,8 +175,8 @@ file — see groundwork GW-006.
 
 ## If you are an agent entering a groundwork repo
 
-1. Read `CLAUDE.md` in full — it is short on purpose.
-2. Run the gate (see CLAUDE.md `## Gate`) to see the current ground state.
+1. Read the host's project instruction file (`CLAUDE.md` or `AGENTS.md`) in full.
+2. Run its `## Gate` commands to see the current ground state.
 3. Before changing behavior: write the failing case first, watch it fail.
 4. Before claiming done: the gate is green.
 5. When you hit a judgment call about what "correct" means — that is an ADR,

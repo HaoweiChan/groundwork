@@ -9,10 +9,12 @@ project, not to groundwork — replace it when instantiating the template.
 
 ## Toolchain
 
-- **groundwork** plugin (this repo's `plugin/`, self-hosted via
-  `.claude/settings.json`) provides the process layer: pr-loop, the four
-  evidence-only review agents, eval/failure/cost discipline skills,
-  /groundwork-init.
+- **groundwork** plugin (this repo's `plugin/`, dual-packaged through
+  `.claude-plugin/` and `.codex-plugin/`) provides the process layer: pr-loop,
+  four evidence-only roles, eval/failure/cost discipline skills, and
+  groundwork-init. Claude loads native agents; Codex role skills spawn
+  no-history subagents from the same canonical contracts. The plugin bundles
+  initializer scaffold assets for installed-cache operation.
 - **ponytail** plugin is enabled repo-wide via `.claude/settings.json` — laziest
   working solution, stdlib first, shortest diff. Applies to all code here.
 - **graphify** is vendored as a project skill — use `/graphify` for architecture
@@ -22,7 +24,8 @@ project, not to groundwork — replace it when instantiating the template.
 ## Layout
 
 ```
-plugin/            the groundwork plugin — skills (pr-loop, groundwork-init, …) + agents
+plugin/            dual Claude/Codex plugin — shared skills + canonical agent contracts
+.agents/plugins/   Codex repo marketplace
 .claude/skills/    project-local skills only (domain knowledge, vendored graphify)
 tasks/             TODO.md (Queue / Debt — the working set) + DONE.md (one-line index of merged work)
 .claude/hooks/     enforcement — the only layer that can actually block
@@ -51,7 +54,7 @@ python3 -m evals.run --suite fast        # pass: score ≥ .eval-baseline.json
 ```bash
 python3 -m evals.run --suite all               # everything, writes report
 python3 -m evals.run --suite fast --update-baseline   # deliberate baseline move
-python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/ready.py   # unblocked tasks (run from repo root)
+python3 plugin/skills/pr-loop/scripts/ready.py   # unblocked tasks in this source repo
 ```
 
 ## Hard rules
@@ -80,7 +83,8 @@ python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/ready.py   # unblocked task
 6. Eval gate green → commit
 
 For a full tasks/TODO.md task that should end in a PR, run the loop through
-**/pr-loop <task-id>** (or `/pr-loop next`) instead: one orchestrator session
+**`/pr-loop <task-id>`** on Claude Code or **`$pr-loop <task-id>`** on Codex
+(`next` selects the next task): one orchestrator session
 drives implement → deterministic analysis/Ponytail preflight → gate → adaptive
 review → batched repair → delta verification. The default budget is two reviewer
 calls; a third needs explicit human approval (groundwork GW-009). A finding blocks
@@ -90,7 +94,8 @@ and an evidence pack, never agent chatter. Independent tasks
 (`Depends:` satisfied — the plugin's `ready.py` lists them) can run as parallel pr-loop
 sessions. Protocol: `plugin/skills/pr-loop/SKILL.md`.
 
-`/pr-loop analyze` produces the read-only review plan without starting delivery.
+`/pr-loop analyze` (Claude) or `$pr-loop analyze` (Codex) produces the read-only
+review plan without starting delivery.
 
 ## Adding a task
 

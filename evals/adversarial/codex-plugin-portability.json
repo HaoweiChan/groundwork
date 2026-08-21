@@ -1,0 +1,11 @@
+{
+  "id": "codex-plugin-portability",
+  "task": "codex_plugin",
+  "suites": ["fast", "invariant"],
+  "input": {"check": "portability"},
+  "expect": {
+    "host_root_references": [],
+    "readme_has_codex_install": true,
+    "readme_has_codex_invocation": true
+  }
+}

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """List pr-loop tasks that are ready to run (status todo, all Depends done).
 
-Lives in the groundwork plugin; run from the target repo's root:
-  python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/ready.py [--selftest]
+Lives in the groundwork plugin; resolve this script from the installed pr-loop
+skill directory and run it from the target repo's root:
+  python3 <pr-loop-skill-dir>/scripts/ready.py [--selftest]
 Reads tasks/TODO.md (Queue/Debt) and tasks/DONE.md (one-liners) in the CWD.
 
 ponytail: line-regex parser over the block format the pr-loop skill defines,

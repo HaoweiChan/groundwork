@@ -1,0 +1,15 @@
+{
+  "id": "codex-plugin-package",
+  "task": "codex_plugin",
+  "suites": ["fast", "invariant"],
+  "input": {"check": "package"},
+  "expect": {
+    "manifest_name": "groundwork",
+    "skills": "./skills/",
+    "versions_match": true,
+    "marketplace_name": "groundwork",
+    "marketplace_source": "./plugin",
+    "installation": "AVAILABLE",
+    "authentication": "ON_INSTALL"
+  }
+}

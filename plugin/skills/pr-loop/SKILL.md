@@ -1,6 +1,6 @@
 ---
 name: pr-loop
-description: Cost-aware implement → analyze → gate → review → repair delivery loop for one tasks/TODO.md task, ending in an evidence-backed PR. Use for /pr-loop <task-id>, /pr-loop next, /pr-loop analyze, "deliver T<N>", or a full PR delivery loop.
+description: Cost-aware implement → analyze → gate → review → repair delivery loop for one tasks/TODO.md task, ending in an evidence-backed PR. Use for /pr-loop or $pr-loop commands, requests to deliver a task id, or a full PR delivery loop.
 ---
 
 # pr-loop — cost-aware delivery state machine
@@ -34,25 +34,41 @@ breaker. Deterministic analyzer and gate runs do not count as model-review calls
 Housekeeping first: a TODO.md block with `status: pr` whose PR merged becomes a
 one-liner in `tasks/DONE.md` (`- <id> — <title> (<merge date>) — <refs>`).
 
-Read only the target block from `tasks/TODO.md`. `/pr-loop next` uses the first
-ready Queue task from:
+Read only the target block from `tasks/TODO.md`. `/pr-loop next` (Claude Code)
+or `$pr-loop next` (Codex) uses the first ready Queue task. Resolve
+`<pr-loop-skill-dir>` as the directory containing this `SKILL.md`, then run:
 
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/ready.py
+python3 "<pr-loop-skill-dir>/scripts/ready.py"
 ```
 
 Refuse unmet `Depends:`. If acceptance criteria are not gateable, stop and ask
 the human; do not improvise a spec.
 
-`/pr-loop analyze` is the read-only entry point: run the analyzer in section 3
-against the requested base/head, print its compact packet, and stop. It does not
-spawn an implementer or reviewer.
+`/pr-loop analyze` or `$pr-loop analyze` is the read-only entry point: run the
+analyzer in section 3 against the requested base/head, print its compact packet,
+and stop. It does not spawn an implementer or reviewer.
 
 ## 2. IMPLEMENT
 
-Spawn an implementer subagent with worktree isolation on `task/<id>`. Its prompt
-contains only the full task block, the repo's failing-case-first rule, the current
-base reference, and this debt rule; do not send repository summaries it can read.
+Before spawning, create or attach a real task worktree from the repository root.
+Use an explicit absolute path outside the orchestrator checkout:
+
+```bash
+worktree_parent="$(mktemp -d "${TMPDIR:-/tmp}/groundwork-<task>.XXXXXX")"
+git worktree add -b "task/<id>" "$worktree_parent/worktree" "origin/<base>"
+```
+
+For a resumed branch, omit `-b` and name the existing branch. Verify isolation by
+running `git rev-parse --show-toplevel` once in the orchestrator checkout and once
+with the task worktree as the command working directory; the absolute paths must
+differ. Stop if they do not.
+
+Spawn the implementer with `fork_turns: "none"`; do not use the runtime default.
+Its initial task contains only the full task block, the repo's
+failing-case-first rule, the current base reference, this debt rule, and the
+absolute worktree path as its mandatory working directory. The subagent may share
+the host filesystem, but every command and edit must be scoped to that worktree.
 It commits its work and reports new case ids plus fail-before/pass-after evidence.
 
 **Debt rule:** adjacent bugs, refactors, and missing coverage outside acceptance
@@ -61,10 +77,11 @@ are not implemented here. Add a task under `## Debt` in `tasks/TODO.md` with an
 
 ## 3. ANALYZE / PONYTAIL PREFLIGHT (deterministic, zero model calls)
 
-Run after implementation and again after any base sync that changes the task diff:
+Run after implementation and again after any base sync that changes the task diff.
+Use the `<pr-loop-skill-dir>` resolved in SPEC:
 
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/analyze.py \
+python3 "<pr-loop-skill-dir>/scripts/analyze.py" \
   --base "origin/<base>" --head "<task-branch>" \
   --output "/tmp/pr-loop-<task>-analysis.json"
 ```
@@ -87,7 +104,7 @@ keyed by question id and then by every listed file, then enforce them:
 ```
 
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT"/skills/pr-loop/scripts/analyze.py \
+python3 "<pr-loop-skill-dir>/scripts/analyze.py" \
   --base "origin/<base>" --head "<task-branch>" \
   --resolutions "/tmp/pr-loop-<task>-preflight.json" --require-preflight \
   --output "/tmp/pr-loop-<task>-analysis.json"
@@ -116,7 +133,10 @@ with gate, base, analysis mode/risk/context count, preflight status, and Decisio
 
 ## 5. REVIEW (model call 1: adaptive falsification)
 
-Spawn the pr-reviewer with fresh context. Give it only:
+Spawn the pr-reviewer with fresh context. In Claude Code use the registered
+`pr-reviewer` agent. In Codex, spawn the reviewer with `fork_turns: "none"`; its
+initial task explicitly invokes the bundled `$pr-reviewer` skill in
+`mode: review`. Give it only:
 
 - the task block and acceptance criteria;
 - the green gate command/result;
@@ -168,9 +188,11 @@ GATE. A red gate returns to this same repair step without calling the reviewer.
 
 ## 7. VERIFY (model call 2: delta only)
 
-Give the reviewer only standing finding records, their routes, resolutions, newly
-added case evidence, and the repair diff. Do not include the original full PR diff
-or ask whether the whole PR is good. It returns one JSON object:
+Use the same registered Claude agent or spawn a new Codex reviewer with
+`fork_turns: "none"` whose task invokes the bundled `$pr-reviewer` skill in
+`mode: verify`. Give it only standing finding records, their routes, resolutions,
+newly added case evidence, and the repair diff. Do not include the original full
+PR diff or ask whether the whole PR is good. It returns one JSON object:
 
 ```json
 {"result":"APPROVED|OPEN","verifications":[
