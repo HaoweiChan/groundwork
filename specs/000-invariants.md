@@ -49,3 +49,7 @@ Task-specific invariants live below a `## <task>` heading as tasks are added.
 ## INV-6: pr-loop routes routine subagent work economically without downgrading high-risk review
 - Rationale: always using the frontier model wastes the savings from bounded context, while always using a smaller model underpowers the cases that need deeper reasoning.
 - Enforced by: `evals/adversarial/pr-loop-model-routing.json` (`pr-loop-model-routing`)
+
+## INV-7: pr-loop never downgrades its orchestrator
+- Rationale: global risk classification, model routing, state transitions, and circuit breakers require the strongest reasoning tier even when bounded subagents do not.
+- Enforced by: `pr-loop-orchestrator-frontier`, `pr-loop-orchestrator-runtime-fallback`, `pr-loop-orchestrator-policy-conflict`, `pr-loop-orchestrator-ledger-directive`

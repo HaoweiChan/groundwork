@@ -14,4 +14,5 @@ their file is kept for history but the ruling to follow is the amending one.
 - GW-008 — report history is one line per run; full dumps only when they earn it — enforced by `evals/run.py` report-write logic; invariant-suite case in descendant repos with an eval harness
 - GW-009 — pr-loop plans review deterministically and defaults to two model review calls — enforced by `analyze.py`, pr-loop ANALYZE/REVIEW/VERIFY, and `pr-loop-analysis-*` cases — *amended by GW-011*
 - GW-010 — one `plugin/` root supports Claude Code and Codex with role parity — enforced by `codex-plugin-*` cases and both plugin validators
-- GW-011 — pr-loop routes bounded work to the least expensive adequate subagent model — enforced by `pr-loop-model-routing` and the evidence ledger
+- GW-011 — pr-loop routes bounded work to the least expensive adequate subagent model — enforced by `pr-loop-model-routing` and the evidence ledger — *amended by GW-012*
+- GW-012 — pr-loop keeps its orchestrator on Opus/Sol and routes only bounded subagents downward — enforced by `pr-loop-orchestrator-*` and `orchestrator_checks`

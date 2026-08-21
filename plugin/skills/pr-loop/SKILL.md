@@ -9,6 +9,27 @@ You are the **orchestrator**. You never write implementation code and never
 review it yourself. You own transitions, deterministic gates, the review-call
 budget, and the evidence ledger. The human invokes the loop and merges the PR.
 
+### Orchestrator model floor
+
+The orchestrator is never model-routed downward:
+
+- Claude Code orchestrator: `opus`.
+- Codex orchestrator: `gpt-5.6-sol`.
+
+Model routing is subagent-only. Before SPEC, confirm the effective host model
+and re-confirm it before every later state transition and every subagent spawn.
+If the orchestrator changes model, or is running on Sonnet, Terra, Luna, or
+another economy tier, stop and ask the human to switch/restart on the listed
+frontier model; do not begin or continue the state machine. If the runtime hides
+the effective model at any checkpoint, stop for human confirmation instead of
+assuming the session is still frontier. No task size, risk class, budget pressure,
+or retry permits an economy orchestrator.
+
+The orchestrator MUST append every passed check to `orchestrator_checks` in the
+evidence ledger with `checkpoint`, `requested`, `effective`, `verified_at`, and
+`outcome`. Keep this trace separate from subagent `model_routes`; never collapse
+it to the initially selected model.
+
 ```
 SPEC → IMPLEMENT → ANALYZE/PREFLIGHT → GATE → REVIEW
 REVIEW ─ approve → EVIDENCE → HUMAN
@@ -260,7 +281,7 @@ last green gate/base, runnable verification, debt ids, and review cost. Append o
 JSON line to `tasks/pr-loop-ledger.jsonl` and commit it:
 
 ```json
-{"task":"T10","date":"YYYY-MM-DD","review_calls":2,"review_mode":"focused","model_routes":[{"role":"implementer","attempt":1,"requested":"gpt-5.6-terra","effective":"gpt-5.6-terra","risk":"ordinary","reason":"bounded task; no initial high-risk signals","outcome":"completed"},{"role":"review","attempt":1,"requested":"gpt-5.6-terra","effective":"gpt-5.6-terra","risk":"medium/focused","reason":"analysis packet selected focused review","outcome":"completed"}],"review_input_tokens":null,"review_output_tokens":null,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"repaired":2,"rejected":0,"debt_logged":1,"gate_failures":1,"human_interventions":0}
+{"task":"T10","date":"YYYY-MM-DD","orchestrator_checks":[{"checkpoint":"SPEC","requested":"gpt-5.6-sol","effective":"gpt-5.6-sol","verified_at":"2026-08-21T12:00:00Z","outcome":"confirmed"},{"checkpoint":"REVIEW","requested":"gpt-5.6-sol","effective":"gpt-5.6-sol","verified_at":"2026-08-21T12:10:00Z","outcome":"confirmed"}],"review_calls":2,"review_mode":"focused","model_routes":[{"role":"implementer","attempt":1,"requested":"gpt-5.6-terra","effective":"gpt-5.6-terra","risk":"ordinary","reason":"bounded task; no initial high-risk signals","outcome":"completed"},{"role":"review","attempt":1,"requested":"gpt-5.6-terra","effective":"gpt-5.6-terra","risk":"medium/focused","reason":"analysis packet selected focused review","outcome":"completed"}],"review_input_tokens":null,"review_output_tokens":null,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"repaired":2,"rejected":0,"debt_logged":1,"gate_failures":1,"human_interventions":0}
 ```
 
 Record actual token counts only when the runtime exposes them; otherwise `null`,

@@ -1,0 +1,11 @@
+{
+  "id": "pr-loop-orchestrator-runtime-fallback",
+  "task": "codex_plugin",
+  "suites": ["fast", "invariant"],
+  "input": {"check": "orchestrator_runtime_fallback"},
+  "expect": {
+    "rechecks_every_transition_and_spawn": true,
+    "model_change_stops": true,
+    "records_checkpoint_trace": true
+  }
+}

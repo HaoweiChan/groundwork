@@ -108,6 +108,12 @@ initial task/repository risk screen protects the pre-diff implementer spawn. The
 ledger records every attempt and substitution; model routing does not change
 isolation, gates, or call limits.
 
+The orchestrator is outside that routing table (GW-012). It remains on Opus in
+Claude Code or Sol in Codex because it owns global risk classification, state
+transitions, budgets, and circuit breakers. An economy-model parent stops before
+SPEC—or at any later model checkpoint—and asks the human to switch or restart.
+Every check is recorded separately from subagent model routes.
+
 The PR is an **evidence ledger**, not a communication bus: bounded role-tagged
 comments, committed JSON findings, and a current evidence body. The metrics line
 in `tasks/pr-loop-ledger.jsonl` records findings and repair outcomes plus review

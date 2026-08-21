@@ -80,7 +80,9 @@ reviewer call. Before each subagent spawn, pr-loop also routes by task risk:
 Claude uses Sonnet for bounded routine work; Codex uses Luna for mechanical work
 and Terra for ordinary implementation/focused review. High-risk or full review
 explicitly uses Opus on Claude or Sol on Codex. Every attempt, substitution, and
-outcome is written into the PR evidence ledger.
+outcome is written into the PR evidence ledger. The orchestrator itself never
+downgrades: it stays on Opus in Claude Code or Sol in Codex, rechecking that floor
+at state transitions and subagent spawns.
 
 ## Updating a project
 

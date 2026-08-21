@@ -175,6 +175,65 @@ def _model_routing_trace():
     }
 
 
+def _orchestrator_frontier():
+    text = (PLUGIN / "skills" / "pr-loop" / "SKILL.md").read_text()
+    return {
+        "claude_orchestrator": (
+            "opus" if "Claude Code orchestrator: `opus`" in text else None
+        ),
+        "codex_orchestrator": (
+            "gpt-5.6-sol" if "Codex orchestrator: `gpt-5.6-sol`" in text else None
+        ),
+        "routing_is_subagent_only": "Model routing is subagent-only" in text,
+        "economy_orchestrator_stops": (
+            "stop and ask the human to switch/restart" in text
+        ),
+        "ledger_records_orchestrator": (
+            '"orchestrator_checks":[{"checkpoint":"SPEC"' in text
+        ),
+    }
+
+
+def _orchestrator_runtime_fallback():
+    text = (PLUGIN / "skills" / "pr-loop" / "SKILL.md").read_text()
+    return {
+        "rechecks_every_transition_and_spawn": (
+            "re-confirm it before every later state transition and every subagent spawn" in text
+        ),
+        "model_change_stops": (
+            "If the orchestrator changes model" in text
+            and "do not begin or continue the state machine" in text
+        ),
+        "records_checkpoint_trace": all(field in text for field in [
+            "`orchestrator_checks`", "`checkpoint`", "`verified_at`",
+        ]),
+    }
+
+
+def _orchestrator_policy_conflict():
+    text = (PLUGIN / "skills" / "pr-loop" / "SKILL.md").read_text()
+    pattern = re.compile(
+        r"(?i)orchestrator\s+(?:may|can|should|must|uses?|runs?)"
+        r"[^.\n]{0,100}(?:sonnet|terra|luna)"
+    )
+    return {"economy_orchestrator_permissions": pattern.findall(text)}
+
+
+def _orchestrator_ledger_directive():
+    text = (PLUGIN / "skills" / "pr-loop" / "SKILL.md").read_text()
+    return {
+        "operational_append_required": (
+            "MUST append every passed check to `orchestrator_checks`" in text
+        ),
+        "sample_has_checkpoint_trace": (
+            '"orchestrator_checks":[{"checkpoint":"SPEC"' in text
+        ),
+        "no_negative_recording_rule": not bool(re.search(
+            r"(?i)do not record[^.\n]{0,80}orchestrator", text
+        )),
+    }
+
+
 def run_case(case):
     check = case["input"]["check"]
     actual = {
@@ -188,5 +247,9 @@ def run_case(case):
         "model_routing_preanalysis": _model_routing_preanalysis,
         "model_routing_explicit_frontier": _model_routing_explicit_frontier,
         "model_routing_trace": _model_routing_trace,
+        "orchestrator_frontier": _orchestrator_frontier,
+        "orchestrator_runtime_fallback": _orchestrator_runtime_fallback,
+        "orchestrator_policy_conflict": _orchestrator_policy_conflict,
+        "orchestrator_ledger_directive": _orchestrator_ledger_directive,
     }[check]()
     return _compare(actual, case["expect"])
