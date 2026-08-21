@@ -10,3 +10,4 @@ their file is kept for history but the ruling to follow is the amending one.
 - GW-004 — TODO.md holds only the working set; merged work moves to DONE.md — enforced by `plugin/skills/pr-loop/SKILL.md` § 1. SPEC (advisory)
 - GW-005 — pr-loop's PR is a bounded interface, not a shared transport — enforced by `plugin/skills/pr-loop/SKILL.md` § REVIEW/REPAIR/EVIDENCE, § PR body, § PR comment identity
 - GW-006 — ADRs lead with the ruling, not the story — enforced by `docs/groundwork.md` § ADR format (advisory); invariant-suite case in descendant repos with an eval harness
+- GW-007 — the orchestrator owns branch freshness against the PR's base (never assumed main); the gate runs on the synced tree — enforced by `plugin/skills/pr-loop/SKILL.md` § 3. GATE, § 6. EVIDENCE (advisory)

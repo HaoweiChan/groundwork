@@ -54,8 +54,23 @@ as a task block under `## Debt` in `tasks/TODO.md` (with `Origin:`) and stay
 on spec.
 
 ### 3. GATE (deterministic — you run it, never trust "I ran the tests")
-On the task branch, run the commands in the repo CLAUDE.md's **`## Gate`**
-section, in order, judged by the pass criteria stated there. No `## Gate`
+
+**Branch freshness first — an orchestrator duty, every round.** The base is
+the PR's target branch (`gh pr view --json baseRefName`; before the PR exists,
+the branch the task was cut from) — never assume `main`. `git fetch origin`
+and compare the task branch to `origin/<base>`. If the base advanced (parallel
+pr-loop sessions merge while you run): `git merge origin/<base>` into the task
+branch — merge, never rebase (a rebase needs a force-push). Textual conflicts
+are implementer work: relay them as a repair item, never resolve them yourself
+and never hand them to the reviewer. Then check for **semantic collisions**
+git cannot see — the base added something in a namespace this branch also
+adds (an ADR number, a task id, a case id, a TODO.md block): renumber or
+reconcile on the branch. Only after the branch contains the base do you run
+the gate — the gate must pass on the tree that will actually be merged, not on
+a stale base. Record `Base: <base>@<sha>` in the PR body each time you sync.
+
+On the (now current) task branch, run the commands in the repo CLAUDE.md's
+**`## Gate`** section, in order, judged by the pass criteria stated there. No `## Gate`
 section → STOP and ask the human to define one: a delivery loop without an
 objective gate is two agents complimenting each other.
 Fail → back to REPAIR with the raw output. Pass → first time through, push
@@ -147,8 +162,10 @@ from this block alone, with no other comment or artifact read required —
 relay the same block to the human directly, don't just post and wait.
 
 ### 6. EVIDENCE
-Reviewer approved. Finalize the rolling PR body: set **Decision** to
-`awaiting human`, drop resolved findings from "Important failures
+Reviewer approved. Do one last freshness sync (the base may have moved during
+the final round) — if it brings changes, GATE again before finalizing; a PR
+handed to the human must be `mergeable` against its current base. Then finalize
+the rolling PR body: set **Decision** to `awaiting human`, drop resolved findings from "Important failures
 discovered" (it lists current material findings, not history), confirm the
 gate line reflects the last green run, and fill in **Verification** (the
 one command a human can run to see it work) and **Debt logged** (T-ids
@@ -183,6 +200,7 @@ Round 2: 1 HIGH / 4 MEDIUM / 3 LOW → repaired 7, rejected 0, debt 1
 2. <one line>
 
 **Gate**: pass — 2026-08-20
+**Base**: <base>@<sha> — synced round <N>, mergeable
 **Full trace**: tasks/reviews/pr<N>-r*.json
 **Verification**: <the one command a human can run to see it work>
 **Debt logged**: <T-ids created this task, or none>
