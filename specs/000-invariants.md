@@ -45,3 +45,7 @@ Task-specific invariants live below a `## <task>` heading as tasks are added.
 ## INV-5: The distributable process layer installs on Claude Code and Codex without behavioral forks
 - Rationale: duplicated implementations or missing reviewer roles make verification depend on which host runs it.
 - Enforced by: `codex-plugin-package`, `codex-plugin-portability`, `codex-plugin-review-role-parity`, `codex-plugin-initializer-scaffold`, `codex-plugin-fresh-review-context`, `codex-plugin-worktree-isolation`
+
+## INV-6: pr-loop routes routine subagent work economically without downgrading high-risk review
+- Rationale: always using the frontier model wastes the savings from bounded context, while always using a smaller model underpowers the cases that need deeper reasoning.
+- Enforced by: `evals/adversarial/pr-loop-model-routing.json` (`pr-loop-model-routing`)

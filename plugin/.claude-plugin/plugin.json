@@ -1,6 +1,6 @@
 {
   "name": "groundwork",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Eval-first process layer for Claude Code and Codex: cost-aware pr-loop, deterministic analysis, bounded delta verification, and independent evidence roles.",
   "author": {
     "name": "Haowei Chan",

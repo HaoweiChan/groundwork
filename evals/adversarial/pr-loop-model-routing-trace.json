@@ -1,0 +1,11 @@
+{
+  "id": "pr-loop-model-routing-trace",
+  "task": "codex_plugin",
+  "suites": ["fast", "invariant"],
+  "input": {"check": "model_routing_trace"},
+  "expect": {
+    "records_route_attempts": true,
+    "records_reason_and_outcome": true,
+    "failed_review_attempt_counts": true
+  }
+}

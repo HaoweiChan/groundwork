@@ -87,7 +87,9 @@ For a full tasks/TODO.md task that should end in a PR, run the loop through
 (`next` selects the next task): one orchestrator session
 drives implement → deterministic analysis/Ponytail preflight → gate → adaptive
 review → batched repair → delta verification. The default budget is two reviewer
-calls; a third needs explicit human approval (groundwork GW-009). A finding blocks
+calls; a third needs explicit human approval (groundwork GW-009). Before each
+subagent spawn, route routine bounded work to Sonnet on Claude or Luna/Terra on
+Codex, explicitly using Opus/Sol for high-risk or full review (GW-011). A finding blocks
 only if it is in scope, evidence-backed, and confidence ≥0.80 — everything else
 becomes Debt, not another round. The PR carries role-tagged structured findings
 and an evidence pack, never agent chatter. Independent tasks

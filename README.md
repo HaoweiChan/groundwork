@@ -76,7 +76,11 @@ orchestrator's conversation.
 | Cold review | `cold-reviewer` agent | `$cold-reviewer` |
 
 `analyze` produces a read-only risk/impact/context packet without spending a
-reviewer call.
+reviewer call. Before each subagent spawn, pr-loop also routes by task risk:
+Claude uses Sonnet for bounded routine work; Codex uses Luna for mechanical work
+and Terra for ordinary implementation/focused review. High-risk or full review
+explicitly uses Opus on Claude or Sol on Codex. Every attempt, substitution, and
+outcome is written into the PR evidence ledger.
 
 ## Updating a project
 

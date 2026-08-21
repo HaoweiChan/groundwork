@@ -99,6 +99,15 @@ call is focused or full according to risk. If repair is needed, the second call
 verifies only standing findings plus the repair diff. A third call requires an
 explicit human choice (GW-009).
 
+Before every subagent spawn, the orchestrator also chooses the least expensive
+adequate model (GW-011): Sonnet for bounded Claude work, Luna for mechanical Codex
+work, and Terra for ordinary Codex implementation/focused verification. High-risk
+or full review, cross-cutting design, security/safety impact, ambiguity, and a
+failed smaller-model attempt explicitly use Opus on Claude or Sol on Codex. An
+initial task/repository risk screen protects the pre-diff implementer spawn. The
+ledger records every attempt and substitution; model routing does not change
+isolation, gates, or call limits.
+
 The PR is an **evidence ledger**, not a communication bus: bounded role-tagged
 comments, committed JSON findings, and a current evidence body. The metrics line
 in `tasks/pr-loop-ledger.jsonl` records findings and repair outcomes plus review

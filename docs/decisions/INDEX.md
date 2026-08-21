@@ -12,5 +12,6 @@ their file is kept for history but the ruling to follow is the amending one.
 - GW-006 — ADRs lead with the ruling, not the story — enforced by `docs/groundwork.md` § ADR format (advisory); invariant-suite case in descendant repos with an eval harness
 - GW-007 — the orchestrator owns branch freshness against the PR's base (never assumed main); the gate runs on the synced tree — enforced by `plugin/skills/pr-loop/SKILL.md` § 4. GATE, § 8. EVIDENCE (advisory)
 - GW-008 — report history is one line per run; full dumps only when they earn it — enforced by `evals/run.py` report-write logic; invariant-suite case in descendant repos with an eval harness
-- GW-009 — pr-loop plans review deterministically and defaults to two model review calls — enforced by `analyze.py`, pr-loop ANALYZE/REVIEW/VERIFY, and `pr-loop-analysis-*` cases
+- GW-009 — pr-loop plans review deterministically and defaults to two model review calls — enforced by `analyze.py`, pr-loop ANALYZE/REVIEW/VERIFY, and `pr-loop-analysis-*` cases — *amended by GW-011*
 - GW-010 — one `plugin/` root supports Claude Code and Codex with role parity — enforced by `codex-plugin-*` cases and both plugin validators
+- GW-011 — pr-loop routes bounded work to the least expensive adequate subagent model — enforced by `pr-loop-model-routing` and the evidence ledger

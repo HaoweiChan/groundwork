@@ -29,6 +29,28 @@ Default model-review budget: **2 calls total** — one adaptive review and one
 delta verification. A third call requires explicit human choice at the circuit
 breaker. Deterministic analyzer and gate runs do not count as model-review calls.
 
+### Model routing — decide before every spawn
+
+Make an explicit model-routing decision before every subagent spawn. Choose the
+least expensive model that can reliably satisfy the bounded role; model size is
+a cost control, never a substitute for the gate or actor/reviewer separation.
+
+| Work | Claude Code | Codex |
+|---|---|---|
+| Mechanical, low-risk, tightly specified | `sonnet` | `gpt-5.6-luna` |
+| Ordinary implementation, focused review, delta verification | `sonnet` | `gpt-5.6-terra` |
+| High-risk/full review, cross-cutting design, security/safety, spec ambiguity, or a failed smaller-model attempt | `opus` | `gpt-5.6-sol` |
+
+Use explicit frontier aliases for every high-risk condition in the last row;
+never use `inherit` or an unspecified host default as a synonym for frontier. Set
+the model on each Claude Agent or Codex subagent invocation. If an organization
+override or availability rule prevents an economy model, use the host default and
+record the substitution. If it prevents the explicit frontier model for high-risk
+work, stop for human routing instead of silently continuing on an economy model.
+All Codex implementer and reviewer spawns still use `fork_turns: "none"`; model
+routing never relaxes worktree isolation, bounded context, call budgets, or the
+independent-review contract.
+
 ## 1. SPEC
 
 Housekeeping first: a TODO.md block with `status: pr` whose PR merged becomes a
@@ -50,6 +72,16 @@ analyzer in section 3 against the requested base/head, print its compact packet,
 and stop. It does not spawn an implementer or reviewer.
 
 ## 2. IMPLEMENT
+
+Before selecting the implementer model, run an initial risk screen from the task
+block and acceptance criteria, referenced paths, repository contracts/instructions,
+dependency manifests, and an existing Graphify graph when present. Do not wait for
+the implementation diff. Treat authentication/authorization, security/privacy,
+payments, destructive operations, migrations, public schemas/APIs, concurrency,
+shared infrastructure, cross-cutting changes, and unclear acceptance as high risk.
+Unknown initial risk uses the explicit frontier model. Record the evidence and
+classification in the first model route entry. The later deterministic analyzer
+supersedes this preliminary classification for review and verification routing.
 
 Before spawning, create or attach a real task worktree from the repository root.
 Use an explicit absolute path outside the orchestrator checkout:
@@ -228,12 +260,17 @@ last green gate/base, runnable verification, debt ids, and review cost. Append o
 JSON line to `tasks/pr-loop-ledger.jsonl` and commit it:
 
 ```json
-{"task":"T10","date":"YYYY-MM-DD","review_calls":2,"review_mode":"focused","review_input_tokens":null,"review_output_tokens":null,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"repaired":2,"rejected":0,"debt_logged":1,"gate_failures":1,"human_interventions":0}
+{"task":"T10","date":"YYYY-MM-DD","review_calls":2,"review_mode":"focused","model_routes":[{"role":"implementer","attempt":1,"requested":"gpt-5.6-terra","effective":"gpt-5.6-terra","risk":"ordinary","reason":"bounded task; no initial high-risk signals","outcome":"completed"},{"role":"review","attempt":1,"requested":"gpt-5.6-terra","effective":"gpt-5.6-terra","risk":"medium/focused","reason":"analysis packet selected focused review","outcome":"completed"}],"review_input_tokens":null,"review_output_tokens":null,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"repaired":2,"rejected":0,"debt_logged":1,"gate_failures":1,"human_interventions":0}
 ```
 
 Record actual token counts only when the runtime exposes them; otherwise `null`,
-never an estimate. Notify the human with task id, PR link, one-line summary, and
-review calls spent. You do not merge.
+never an estimate. Record every spawn attempt in `model_routes`, including failed
+or substituted attempts; never collapse a retry into one final model value. Each
+entry has `role`, `attempt`, `requested`, `effective` (or `null` when the runtime
+does not expose it), `risk`, `reason`, and `outcome`. A reviewer invocation counts
+toward the review-call budget even when it fails, returns invalid output, or is
+retried on a frontier model. Notify the human with task id, PR link, one-line
+summary, and review calls spent. You do not merge.
 
 ## PR body — rolling evidence pack
 
@@ -247,6 +284,7 @@ review calls spent. You do not merge.
 - Analysis: <focused|full> — <risk> — <N> context files — graphify|changed-files
 - Preflight: pass — <N> resolved questions
 - Review: <calls used>/2 default calls — <current result>
+- Models: <role/attempt/requested/effective/outcome summary from model_routes>
 - Full trace: tasks/reviews/pr<N>-*.json
 - Reproduce: <one command>
 - Debt: <T-ids or none>

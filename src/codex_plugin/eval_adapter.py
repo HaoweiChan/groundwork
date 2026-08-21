@@ -113,6 +113,68 @@ def _worktree_isolation():
     }
 
 
+def _model_routing():
+    text = (PLUGIN / "skills" / "pr-loop" / "SKILL.md").read_text()
+    return {
+        "routes_before_every_spawn": (
+            "model-routing decision before every subagent spawn" in text
+        ),
+        "claude_economy_model": "sonnet" if '`sonnet`' in text else None,
+        "codex_economy_models": [
+            model for model in ["gpt-5.6-terra", "gpt-5.6-luna"]
+            if f"`{model}`" in text
+        ],
+        "preserves_frontier_for_high_risk": (
+            "Use explicit frontier aliases for every high-risk condition" in text
+        ),
+        "records_selected_models": '"model_routes":[{"role":"implementer"' in text,
+    }
+
+
+def _model_routing_preanalysis():
+    text = (PLUGIN / "skills" / "pr-loop" / "SKILL.md").read_text()
+    screen = text.find("run an initial risk screen")
+    spawn = text.find("Spawn the implementer")
+    return {
+        "initial_risk_before_implementer": 0 <= screen < spawn,
+        "initial_risk_uses_task_and_repo_evidence": all(phrase in text for phrase in [
+            "task block and acceptance criteria",
+            "repository contracts/instructions",
+            "existing Graphify graph",
+        ]),
+        "unknown_initial_risk_uses_frontier": (
+            "Unknown initial risk uses the explicit frontier model" in text
+        ),
+    }
+
+
+def _model_routing_explicit_frontier():
+    text = (PLUGIN / "skills" / "pr-loop" / "SKILL.md").read_text()
+    return {
+        "claude_frontier_model": "opus" if "`opus`" in text else None,
+        "codex_frontier_model": (
+            "gpt-5.6-sol" if "`gpt-5.6-sol`" in text else None
+        ),
+        "does_not_inherit_frontier": "host frontier/default" not in text,
+    }
+
+
+def _model_routing_trace():
+    text = (PLUGIN / "skills" / "pr-loop" / "SKILL.md").read_text()
+    return {
+        "records_route_attempts": all(field in text for field in [
+            "`model_routes`", "`role`", "`attempt`", "`requested`", "`effective`",
+        ]),
+        "records_reason_and_outcome": all(field in text for field in [
+            "`risk`", "`reason`", "`outcome`",
+        ]),
+        "failed_review_attempt_counts": bool(re.search(
+            r"A reviewer invocation counts\s+toward the review-call budget even when it fails",
+            text,
+        )),
+    }
+
+
 def run_case(case):
     check = case["input"]["check"]
     actual = {
@@ -122,5 +184,9 @@ def run_case(case):
         "initializer_scaffold": _initializer_scaffold,
         "fresh_review_context": _fresh_review_context,
         "worktree_isolation": _worktree_isolation,
+        "model_routing": _model_routing,
+        "model_routing_preanalysis": _model_routing_preanalysis,
+        "model_routing_explicit_frontier": _model_routing_explicit_frontier,
+        "model_routing_trace": _model_routing_trace,
     }[check]()
     return _compare(actual, case["expect"])

@@ -1,6 +1,6 @@
 {
   "name": "groundwork",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Eval-first delivery with cost-aware PR review, deterministic change analysis, and independent evidence roles.",
   "author": {
     "name": "Haowei Chan",
