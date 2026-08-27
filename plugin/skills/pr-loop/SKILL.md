@@ -410,8 +410,11 @@ Acceptance: gateable criteria.
 Out of scope: (optional)
 ```
 
-`ready.py` sorts ready tasks by `(priority, id)`; positional order in `## Queue`
-stays the primary signal for tasks without a `Priority:` line. Every `## Debt`
+`ready.py` prints the whole board, task-master style — one line per block
+with state (`ready|blocked|in-progress|pr|parked`), priority, title, and every
+dependency carrying its own satisfaction mark (`M9(v) M12(x)`); ready rows
+sort by `(priority, id)`. Ids may be compound (`T-M42-20`) — uppercase start,
+at least one digit, hyphens allowed. Every `## Debt`
 block must carry `Priority:` so parked work is rankable — convergence-demoted
 debt sets it per §7 (MEDIUM → `P1`, LOW → `P2`); hand-added debt defaults to `P2`
 if omitted.
