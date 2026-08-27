@@ -87,7 +87,9 @@ the agents from repeatedly paying to rediscover the same repository context:
 SPEC → IMPLEMENT → ANALYZE/PREFLIGHT → GATE → ADAPTIVE REVIEW
 REVIEW ─ approve → EVIDENCE → HUMAN
 REVIEW ─ findings → REPAIR → ANALYZE/PREFLIGHT → GATE → DELTA VERIFY
-DELTA VERIFY ─ approve → EVIDENCE; open after call 2 → HUMAN
+DELTA VERIFY ─ approve → EVIDENCE; open after call 2 → CONVERGE
+CONVERGE ─ BLOCKING remains → bounded repair/verify; rest → debt → EVIDENCE
+CONVERGE ─ true anomaly (defect-moved | dispute | high-blocked) → HUMAN
 ```
 
 Agents own execution and adversarial review, the repo's gate owns objective
@@ -96,8 +98,11 @@ stdlib analyzer turns the diff and an existing Graphify graph (when present)
 into a compact impact/risk/context packet; Ponytail questions about new surface
 must be resolved; a red gate returns directly to repair. The first reviewer
 call is focused or full according to risk. If repair is needed, the second call
-verifies only standing findings plus the repair diff. A third call requires an
-explicit human choice (GW-009).
+verifies only standing findings plus the repair diff. Past that budget, pr-loop
+converges automatically instead of asking (GW-015): only a red gate, a real
+HIGH wrong-output, or a false published claim stays BLOCKING and may spend a
+further bounded call; everything else becomes prioritized debt, and the human
+is asked only for the three true anomalies below.
 
 Before every subagent spawn, the orchestrator also chooses the least expensive
 adequate capability level (GW-011, GW-014): Sonnet-level for bounded Claude work,
@@ -123,15 +128,18 @@ in `tasks/pr-loop-ledger.jsonl` records findings and repair outcomes plus review
 calls/mode and actual reviewer tokens when exposed, so verification cost is
 measured rather than guessed.
 
-Three rules keep the loop convergent (GW-002, GW-009): a finding blocks only
-if it breaks acceptance, the gate, or a published claim; blocking also needs
-concrete evidence and confidence at least 0.80; and repair is batched before
-one delta verification. Everything else becomes a **Debt** task in
-`tasks/TODO.md`. Task blocks carry `Depends:` so independent tasks can run
+Four rules keep the loop convergent (GW-002, GW-009, GW-015): a finding blocks
+only if it breaks acceptance, the gate, or a published claim; blocking also
+needs concrete evidence and confidence at least 0.80; repair is batched before
+one delta verification; and past the default budget, convergence mode demotes
+anything but a red gate, a real HIGH wrong-output, or a false published claim
+to debt instead of asking a human to keep going. Everything else becomes a
+**Debt** task in `tasks/TODO.md`, with a mandatory `Priority:` when convergence
+created it. Task blocks carry `Depends:` so independent tasks can run
 as parallel pr-loop sessions on isolated `task/<id>` worktree branches. Codex
 creates the worktree before spawning an implementer and gives the implementer
 its absolute path as the mandatory working directory. The plugin's `ready.py`
-lists what is unblocked. TODO.md stays small by design:
+lists what is unblocked, sorted by priority. TODO.md stays small by design:
 it holds only Queue and Debt; merged work becomes a one-liner in
 `tasks/DONE.md`, and agents read single task blocks, never the whole file.
 

@@ -215,6 +215,22 @@ class ReviewProtocolTests(unittest.TestCase):
         self.assertIn("clarification without new evidence becomes `DEBT`", self.reviewer)
         self.assertIn("repair-regression` opens the circuit breaker", self.skill)
 
+    def test_convergence_mode_replaces_ask_every_time_breaker(self):
+        # GW-015: after call 2, the loop converges on its own -- no human
+        # prompt just to keep going, and the only escalations left are the
+        # three named anomalies.
+        self.assertIn("### Convergence mode", self.skill)
+        self.assertIn("no human prompt", self.skill)
+        for anomaly in ("defect-moved", "dispute", "high-blocked"):
+            self.assertIn(anomaly, self.skill)
+        # the old ask-every-time phrasing must be gone, not just supplemented
+        self.assertNotIn("The human must explicitly\nchoose A", self.skill)
+        self.assertNotIn("option A one more bounded repair/verification", self.skill)
+
+    def test_todo_format_documents_priority(self):
+        self.assertIn("Priority: P1", self.skill)
+        self.assertIn("mandatory on Debt", self.skill)
+
 
 if __name__ == "__main__":
     unittest.main()

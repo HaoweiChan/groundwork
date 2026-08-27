@@ -41,7 +41,10 @@ SPEC → IMPLEMENT → ANALYZE/PREFLIGHT → GATE → REVIEW
 REVIEW ─ approve → EVIDENCE → HUMAN
 REVIEW ─ findings → REPAIR → ANALYZE/PREFLIGHT → GATE → VERIFY
 VERIFY ─ approve → EVIDENCE
-VERIFY ─ open after call 2 → HUMAN
+VERIFY ─ open after call 2 → CONVERGE (automatic, no human prompt)
+CONVERGE ─ BLOCKING remains → bounded REPAIR/VERIFY (still 2 anomaly checks apply)
+CONVERGE ─ rest demoted to debt, no BLOCKING left → EVIDENCE
+CONVERGE ─ true anomaly (defect-moved | dispute | high-blocked) → HUMAN
 ```
 
 | Role | Owns | May never |
@@ -49,12 +52,14 @@ VERIFY ─ open after call 2 → HUMAN
 | implementer (subagent, worktree) | implementation, cases, preflight resolutions | approve its own work |
 | pr-reviewer (subagent, fresh context) | one falsification review + bounded delta verification | edit code |
 | analyzer + eval suite | deterministic context/risk + objective pass/fail | be skipped or mocked |
-| orchestrator | transitions, freshness, routing, budget, ledger | implement or review |
-| human | spec, disputes, merge, optional third review call | be needed inside the default two-call loop |
+| orchestrator | transitions, freshness, routing, budget, ledger, convergence | implement or review |
+| human | spec, true-anomaly disputes, merge | be needed inside the default two-call loop or for a routine demotion |
 
 Default model-review budget: **2 calls total** — one adaptive review and one
-delta verification. A third call requires explicit human choice at the circuit
-breaker. Deterministic analyzer and gate runs do not count as model-review calls.
+delta verification. After call 2, an open in-scope finding does not stop the
+loop or wait on the human: the orchestrator enters convergence mode (§7) and
+only a BLOCKING finding may consume further bounded repair/verification calls.
+Deterministic analyzer and gate runs do not count as model-review calls.
 
 ### Model routing — decide before every spawn
 
@@ -273,12 +278,44 @@ least 0.80; lower-confidence or out-of-scope regressions become debt. Commit
 `tasks/reviews/pr<N>-r2-verification.json` and post one bounded reviewer round-2
 comment. APPROVED with all records verified/debt → EVIDENCE.
 
-Any open in-scope finding after call 2 opens the circuit breaker. Do not
-automatically start a third reviewer or implementer round. Post and relay one
-compact `**pr-loop/orchestrator — circuit breaker**` block: calls spent; the single
-stalling finding and key evidence; option A one more bounded repair/verification
-call; option B human disposition/debt; recommendation. The human must explicitly
-choose A before model-review call 3.
+### Convergence mode (after call 2, automatic — no human prompt)
+
+An open in-scope finding after call 2 does not stop the loop. The orchestrator
+enters **convergence mode** on its own: finish only what genuinely cannot
+merge, demote the rest to prioritized debt, and proceed to EVIDENCE.
+
+The BLOCKING set narrows to findings where merging would be dishonest or
+harmful:
+
+- the gate is red;
+- a HIGH-severity finding is wrong output on realistic input — the shipped
+  behavior is wrong, not merely undertested;
+- a published number/claim in the docs being merged is actively false.
+
+Only a BLOCKING finding may consume further bounded repair/verification calls
+(same §6/§7 batching and delta-only rules; still subject to the two
+repair-attempt and dispute anomaly checks below — convergence narrows scope,
+it does not grant an unbounded round count).
+
+Every other open in-scope finding is DEMOTED to debt: a task block in
+`tasks/TODO.md` `## Debt` with `Origin: PR #<n> <finding-id> (converged)` and a
+`Priority:` line — demoted MEDIUM becomes `P1`, demoted LOW becomes `P2`.
+Record the demotion in the finding's resolution artifact as route `debt` with
+reason `converged`, and list it in the round comment and PR body exactly like
+any other debt route.
+
+The circuit breaker still escalates to the human, but only on true anomalies:
+
+1. **defect-moved** — the same BLOCKING finding survives two repair attempts;
+2. **dispute** — an implementer-rejected finding is re-raised by verification
+   with new concrete evidence;
+3. **high-blocked** — convergence would otherwise demote a HIGH finding. A
+   HIGH is never silently demoted: it either repairs or escalates.
+
+On escalation, post and relay one compact
+`**pr-loop/orchestrator — circuit breaker**` block: calls spent; the anomaly
+that fired and key evidence; recommendation. Outside those three anomalies,
+convergence mode proceeds to EVIDENCE without a human prompt.
 
 ## 8. EVIDENCE
 
@@ -287,12 +324,17 @@ and the analyzer. If risk or review targets materially expand, the circuit break
 asks the human whether to spend a bounded verification call; do not silently hand
 off stale review evidence. Require mergeability.
 
+Every debt task convergence demoted to `P1` gets a fully-specified `tasks/TODO.md`
+block, not a placeholder: `id`, `Spec` drawn from the finding's `claim` + `evidence`,
+and `Acceptance` drawn from its `acceptance` field, so it is immediately runnable
+as its own `/pr-loop <id>`. `P2` debt keeps the normal one-line-Origin debt block.
+
 Finalize the PR body: Decision `awaiting human`, current material failures only,
 last green gate/base, runnable verification, debt ids, and review cost. Append one
 JSON line to `tasks/pr-loop-ledger.jsonl` and commit it:
 
 ```json
-{"task":"T10","date":"YYYY-MM-DD","orchestrator_checks":[{"checkpoint":"SPEC","requested":"sol-level+","effective":null,"evidence":"host session selector","verified_at":"YYYY-MM-DDTHH:MM:SSZ","outcome":"confirmed"},{"checkpoint":"REVIEW","requested":"sol-level+","effective":null,"evidence":"unchanged host session selector","verified_at":"YYYY-MM-DDTHH:MM:SSZ","outcome":"confirmed"}],"review_calls":2,"review_mode":"focused","model_routes":[{"role":"implementer","attempt":1,"requested":"terra-level","effective":null,"evidence":"host mapping confirmed terra-level","risk":"ordinary","reason":"bounded task; no initial high-risk signals","outcome":"completed"},{"role":"review","attempt":1,"requested":"terra-level","effective":null,"evidence":"host mapping confirmed terra-level","risk":"medium/focused","reason":"analysis packet selected focused review","outcome":"completed"}],"review_input_tokens":null,"review_output_tokens":null,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"repaired":2,"rejected":0,"debt_logged":1,"gate_failures":1,"human_interventions":0}
+{"task":"T10","date":"YYYY-MM-DD","orchestrator_checks":[{"checkpoint":"SPEC","requested":"sol-level+","effective":null,"evidence":"host session selector","verified_at":"YYYY-MM-DDTHH:MM:SSZ","outcome":"confirmed"},{"checkpoint":"REVIEW","requested":"sol-level+","effective":null,"evidence":"unchanged host session selector","verified_at":"YYYY-MM-DDTHH:MM:SSZ","outcome":"confirmed"}],"review_calls":2,"review_mode":"focused","model_routes":[{"role":"implementer","attempt":1,"requested":"terra-level","effective":null,"evidence":"host mapping confirmed terra-level","risk":"ordinary","reason":"bounded task; no initial high-risk signals","outcome":"completed"},{"role":"review","attempt":1,"requested":"terra-level","effective":null,"evidence":"host mapping confirmed terra-level","risk":"medium/focused","reason":"analysis packet selected focused review","outcome":"completed"}],"review_input_tokens":null,"review_output_tokens":null,"findings":{"HIGH":1,"MEDIUM":2,"LOW":1},"repaired":2,"rejected":0,"debt_logged":1,"converged":1,"escalations":[{"reason":"defect-moved"}],"gate_failures":1,"human_interventions":0}
 ```
 
 Record actual token counts only when the runtime exposes them; otherwise `null`,
@@ -302,8 +344,13 @@ entry has `role`, `attempt`, `requested`, `effective` (or `null` when the runtim
 does not expose it), `evidence` for the effective capability level, `risk`,
 `reason`, and `outcome`. A reviewer invocation counts
 toward the review-call budget even when it fails, returns invalid output, or is
-retried at the high-capability level. Notify the human with task id, PR link,
-one-line summary, and review calls spent. You do not merge.
+retried at the high-capability level. `converged` is the count of findings
+convergence mode demoted to debt on this PR (`0` when review approved outright
+or every finding stayed BLOCKING); `escalations` lists one entry per circuit-
+breaker trip with its `reason` (`defect-moved`, `dispute`, or `high-blocked`) —
+`[]` when convergence never escalated. Notify the human with task id, PR link,
+one-line summary, review calls spent, and any `P1` convergence debt as
+`follow-up: /pr-loop <id>`. You do not merge.
 
 ## PR body — rolling evidence pack
 
@@ -347,9 +394,16 @@ moves a Debt block to Queue. Merged blocks leave TODO.md for DONE.md.
 ### T10 — <title>            [status: todo|in-progress|pr|done]
 Depends: T3, T7        (optional)
 Origin: PR #12 R12     (debt only)
+Priority: P1           (optional on Queue, mandatory on Debt; default P2)
 Spec: what and why, 2–5 lines.
 Acceptance: gateable criteria.
 Out of scope: (optional)
 ```
+
+`ready.py` sorts ready tasks by `(priority, id)`; positional order in `## Queue`
+stays the primary signal for tasks without a `Priority:` line. Every `## Debt`
+block must carry `Priority:` so parked work is rankable — convergence-demoted
+debt sets it per §7 (MEDIUM → `P1`, LOW → `P2`); hand-added debt defaults to `P2`
+if omitted.
 
 Update status at transitions: `in-progress` at IMPLEMENT, `pr` at EVIDENCE.
