@@ -19,3 +19,4 @@ their file is kept for history but the ruling to follow is the amending one.
 - GW-013 — root evals/src/specs stay clean project seed material; Groundwork self-tests live in plugin/tests — enforced by `plugin/tests/test_repository_boundary.py` and source-repo hooks
 - GW-014 — model routing names capability floors, not product versions; newer stronger tiers qualify automatically — enforced by `plugin/tests/test_plugin_contracts.py` and pr-loop model checkpoints
 - GW-015 — after call 2, pr-loop converges automatically instead of asking: BLOCKING findings repair, the rest demote to prioritized debt — enforced by `plugin/skills/pr-loop/SKILL.md` § 7 VERIFY (Convergence mode), § 8 EVIDENCE; `ready.py`
+- GW-016 — the PR body opens with the task's spec, verbatim and immutable — enforced by `plugin/skills/pr-loop/SKILL.md` § PR body (advisory) · amends GW-005

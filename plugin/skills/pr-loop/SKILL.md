@@ -358,6 +358,10 @@ one-line summary, review calls spent, and any `P1` convergence debt as
 ## <task-id> — <goal, one line>
 <what done means, one line>
 
+### Task
+<the task's block from tasks/TODO.md, VERBATIM — Origin, Depends, Priority,
+Spec, Acceptance — copied once at PR creation and never edited afterward>
+
 ### Verification
 - Gate: pass — <date>
 - Base: <base>@<sha> — mergeable
@@ -375,7 +379,13 @@ one-line summary, review calls spent, and any `P1` convergence debt as
 **Decision**: in repair | awaiting human | merged
 ```
 
-The body is current state, not history. Resolved findings disappear. Full review
+The body is current state, not history — except `### Task`, the immutable
+why-anchor (GW-016): seeded verbatim from the tasks/TODO.md block at PR
+creation, never touched by any later rewrite, so a reader can learn what the
+task set out to solve and where it came from (`Origin:` gives debt lineage)
+without leaving the PR. A mid-flight spec change is a human decision recorded
+as a dated addendum line under the section, never an edit of the original.
+Resolved findings disappear. Full review
 and repair history stays in committed artifacts. Every PR comment uses the shared
 account's explicit role identity and is at most 40 lines:
 
