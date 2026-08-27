@@ -22,8 +22,10 @@ import sys
 
 TODO = pathlib.Path("tasks/TODO.md")
 DONE = pathlib.Path("tasks/DONE.md")
-# ids like M9, T3, T-R89, T-M42-20-D1: uppercase start, must contain a digit
-ID = r"[A-Z][A-Za-z0-9-]*\d[A-Za-z0-9-]*"
+# ids like M9, T3, T-R89, T-M42-20-D1, T-ADR-NUM: uppercase start, and either
+# a digit or a hyphen (so bare words in prose never match, but hyphenated
+# word-ids without digits do)
+ID = r"[A-Z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)+|[A-Z][A-Za-z0-9]*\d[A-Za-z0-9]*"
 DONE_LINE = re.compile(rf"^[-*]\s*({ID})\s+—")
 HEAD = re.compile(rf"^#{{2,3}}\s+({ID})\s+—\s+(.*?)\s*\[status:\s*([a-z-]+)\]")
 DEPS = re.compile(r"^Depends:\s*(.+)")
@@ -110,6 +112,8 @@ def selftest():
     assert t["T-M42-20"]["status"] == "pr"
     # compound ids parse whole, never as an embedded M42
     assert t["T-M42-20-D1"]["deps"] == ["T-M42-20"]
+    d = parse("## Debt\n### T-ADR-NUM — no digits in this id [status: todo]\nDepends: T-RANK-MIRROR\n")
+    assert d["T-ADR-NUM"]["deps"] == ["T-RANK-MIRROR"]  # digit-less hyphenated ids parse
     assert [d for d in t["T3"]["deps"] if t.get(d, {}).get("status") != "done"] == ["T2", "T9"]
     assert t["M8"]["deps"] == ["T1"]
     assert t["T2"]["priority"] == DEFAULT_PRIORITY
