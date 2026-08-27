@@ -58,13 +58,13 @@ def done_ids(text):
     return {m.group(1) for line in text.splitlines() if (m := DONE_LINE.match(line))}
 
 
-def row(state, tid, t, done):
+def row(state, tid, t, done, width=14):
     deps = ""
     if t["deps"]:
         deps = " | deps: " + " ".join(
             f"{d}({'v' if done(d) else 'x'})" for d in t["deps"])
     title = t["title"][:48]
-    return f"{state:<12}{tid:<14}{t['priority']}  {title}{deps}"
+    return f"{state:<12}{tid:<{width}}{t['priority']}  {title}{deps}"
 
 
 def main():
@@ -80,6 +80,7 @@ def main():
         if not blocks:
             continue
         print(f"## {section.capitalize()}")
+        width = max(14, max(len(tid) for tid, _ in blocks) + 2)
         ready, rest = [], []
         for tid, t in blocks:
             if section == "debt":
@@ -91,9 +92,9 @@ def main():
             else:
                 rest.append(("blocked", tid, t))
         for pr_, tid, t in sorted(ready):
-            print(row("ready", tid, t, is_done))
+            print(row("ready", tid, t, is_done, width))
         for state, tid, t in sorted(rest, key=lambda r: (r[2]["priority"], r[1])):
-            print(row(state, tid, t, is_done))
+            print(row(state, tid, t, is_done, width))
 
 
 def selftest():
