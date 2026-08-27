@@ -53,12 +53,26 @@ files. No network is needed.
    instead of replacing it. Skip cleanly if declined — pr-loop still works;
    the gate just runs only inside the loop.
 
-5. **Version marker.** Write `.groundwork-version` containing the upstream
+5. **Toolchain (ask first — this enables plugins and adds a skill).** Offer
+   two optional additions, each independently declinable:
+   - **Plugin wiring**: merge `assets/scaffold/.claude/plugins-fragment.json`
+     (groundwork + ponytail marketplaces and enabledPlugins) into the repo's
+     `.claude/settings.json` — create the file if absent, MERGE keys if it
+     exists, never overwrite an existing entry. The host will still ask the
+     user to approve each plugin on next open; this step only declares them
+     at project scope so every future session and teammate gets the prompt.
+   - **Graphify skill**: copy `assets/scaffold/.claude/skills-graphify` to
+     `.claude/skills/graphify` (skip if the path exists or the user has it
+     globally). pr-loop's analyzer consumes `graphify-out/` only when present
+     either way — declining costs nothing but the richer analysis packet.
+   Skip both cleanly if declined; pr-loop works without them.
+
+6. **Version marker.** Write `.groundwork-version` containing the upstream
    commit hash of the resolved Git marketplace checkout. If the installed plugin
    is not inside a Git checkout, use the manifest version instead. Future syncs
    compare against this marker.
 
-6. **Report.** One summary: what was created, what already existed, what was
+7. **Report.** One summary: what was created, what already existed, what was
    declined, and the host's two entry points — `/pr-loop next` on Claude Code or
    `$pr-loop next` on Codex, plus the ready script resolved from the skill path.
 
