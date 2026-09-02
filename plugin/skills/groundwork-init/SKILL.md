@@ -29,7 +29,11 @@ files. No network is needed.
    and `backlog task view <id> --plain`; debt lives in `backlog/drafts/`. If the
    repo already tracks tasks elsewhere (issues, a milestone table), do NOT
    convert anything — initialize alongside and note that pr-loop reads only
-   Backlog.md.
+   Backlog.md. A repo still carrying the retired `tasks/TODO.md` block format
+   migrates its `[status: todo]` blocks with
+   `python3 <this-skill-dir>/scripts/migrate_todo.py tasks/TODO.md` (prints
+   the `backlog task create` commands; add `--run` to execute them), then
+   deletes `tasks/TODO.md` and `tasks/DONE.md` — history keeps them.
 
 3. **Gate.** Use the host's project instruction file: `AGENTS.md` on Codex,
    `CLAUDE.md` on Claude Code. If it is absent, create a minimal one; if its
