@@ -71,6 +71,7 @@ class MigrateTests(unittest.TestCase):
         self.assertIn("--draft", cmd)
         self.assertIn("debt", cmd[cmd.index("-l") + 1])
         self.assertIn("T-M39-15, cross-branch near-miss 2026-08-28", cmd)
+        self.assertIn("TODO.md T-M39-15-D2", cmd)  # the old id always survives, Origin or not
 
     def test_done_and_pr_blocks_are_skipped(self):
         titles = [c[3] for c in self.cmds]

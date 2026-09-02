@@ -66,8 +66,9 @@ def commands(text, env=None):
         if f.get("Depends"):  # old ids do not exist in Backlog.md; keep them readable, not as --dep
             desc += f"\n\nDepends (TODO.md ids): {f['Depends'].strip()}"
         desc += "\n\nProbe: none — migrated from TODO.md"
-        cmd = bin_ + ["task", "create", title, "-d", desc,
-               "--ref", f.get("Origin") or f"TODO.md {tid}"]
+        cmd = bin_ + ["task", "create", title, "-d", desc, "--ref", f"TODO.md {tid}"]
+        if f.get("Origin"):
+            cmd += ["--ref", f["Origin"]]
         if f.get("Acceptance"):
             cmd += ["--ac", f["Acceptance"]]
         if f.get("Priority") in PRIORITY:
