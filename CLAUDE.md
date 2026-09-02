@@ -66,9 +66,14 @@ python3 plugin/skills/pr-loop/scripts/ready.py   # unblocked tasks in this sourc
    fabricate output to make a run look green.
 5. Commits go through the pre-commit test gate. `--no-verify` is for emergencies
    and must be explained in the commit message.
-6. Commit subjects follow the existing form
-   **`<scope-or-GW-NNN>: <lowercase imperative summary>`**. Inspect recent history
-   before committing; do not switch to an unprefixed sentence-style subject.
+6. Commit subjects and PR titles share one shape:
+   **`<type>(<scope>)?: <lowercase imperative summary>`**, type ∈ feat, fix,
+   docs, chore, refactor, test, perf, ci, build, revert. All lowercase except
+   ids (`GW-016`, `T-M42-4`) and `code` spans; no trailing period. The
+   commit-msg hook and the PR workflow both run
+   `plugin/assets/scaffold/.github/pr_check.py`. PR bodies follow
+   `.github/PULL_REQUEST_TEMPLATE.md`: keep all six sections, write `none`
+   rather than deleting one.
 
 ## Per-feature loop
 

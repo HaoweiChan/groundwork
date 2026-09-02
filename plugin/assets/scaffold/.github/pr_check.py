@@ -4,7 +4,8 @@
 Title:  <type>(<scope>)?: <lowercase summary>   type in TYPES; ids and `code` keep case.
 Body:   six sections in order, greppable Verification lines, follow-ups with a case/run id.
 
-Usage: pr_check.py [--event $GITHUB_EVENT_PATH] | [--title T --body-file F]
+Usage: pr_check.py [--event $GITHUB_EVENT_PATH] | [--title T --body-file F] | [--title-only --title T]
+The same title rule applies to commit subjects (.githooks/commit-msg).
 Exit 1 with one error per line on failure. Stdlib only.
 """
 
@@ -106,7 +107,13 @@ def main(argv=None):
     ap.add_argument("--event", default=os.environ.get("GITHUB_EVENT_PATH"))
     ap.add_argument("--title")
     ap.add_argument("--body-file")
+    ap.add_argument("--title-only", action="store_true", help="commit-msg hook: check the subject line only")
     args = ap.parse_args(argv)
+    if args.title_only:
+        errors = check_title(args.title or "")
+        for e in errors:
+            print(f"pr-check: {e}")
+        return 1 if errors else 0
     if args.title is not None or args.body_file:
         title = args.title or ""
         body = Path(args.body_file).read_text(encoding="utf-8") if args.body_file else ""

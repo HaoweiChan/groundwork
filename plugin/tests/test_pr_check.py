@@ -176,6 +176,10 @@ class MainTests(unittest.TestCase):
             event.write_text(json.dumps({"pull_request": {"title": "feat: good", "body": GOOD_BODY}}))
             self.assertEqual(0, self.m.main(["--event", str(event)]))
 
+    def test_title_only_mode_serves_the_commit_msg_hook(self):
+        self.assertEqual(0, self.m.main(["--title-only", "--title", "fix(hooks): check commit subjects"]))
+        self.assertEqual(1, self.m.main(["--title-only", "--title", "ready.py: id column width adapts"]))
+
     def test_reads_title_and_body_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             body = Path(tmp) / "body.md"
