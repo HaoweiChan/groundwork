@@ -23,11 +23,13 @@ files. No network is needed.
 1. **Detect the situation.** Greenfield (no test suite, little/no src) vs
    brownfield (existing tests, CI, docs). This changes step 3 only.
 
-2. **Task queue.** If `tasks/TODO.md` is missing, copy it and `tasks/DONE.md`
-   from the bundled scaffold (`ready.py` stays in the plugin — nothing to
-   copy). If the repo already tracks tasks elsewhere (a milestone table,
-   issues), do NOT convert anything — create the files alongside and note
-   that pr-loop reads only this format.
+2. **Task store.** If `backlog/config.yml` is missing, run `backlog init
+   --defaults` (Backlog.md, `npx -y backlog.md` when the CLI is not installed).
+   pr-loop reads one task at a time through `backlog task list --ready --plain`
+   and `backlog task view <id> --plain`; debt lives in `backlog/drafts/`. If the
+   repo already tracks tasks elsewhere (issues, a milestone table), do NOT
+   convert anything — initialize alongside and note that pr-loop reads only
+   Backlog.md.
 
 3. **Gate.** Use the host's project instruction file: `AGENTS.md` on Codex,
    `CLAUDE.md` on Claude Code. If it is absent, create a minimal one; if its

@@ -26,7 +26,7 @@ plugin/            dual Claude/Codex plugin — shared skills + canonical agent 
 plugin/tests/      Groundwork's own stdlib-only contract and regression tests
 .agents/plugins/   Codex repo marketplace
 .claude/skills/    project-local skills only (domain knowledge, vendored graphify)
-tasks/             TODO.md (Queue / Debt — the working set) + DONE.md (one-line index of merged work)
+backlog/           Backlog.md task store when this repo carries tasks (one file per task; drafts/ = debt)
 .claude/hooks/     enforcement — the only layer that can actually block
 .githooks/         pre-commit Groundwork test gate (installed via core.hooksPath)
 specs/             ONLY: 000-invariants.md, per-task contracts, decisions/ADR-*.md + decisions/INDEX.md
@@ -48,7 +48,7 @@ python3 -m unittest discover -s plugin/tests -p 'test_*.py'
 
 ```bash
 python3 -m unittest discover -s plugin/tests -p 'test_*.py'
-python3 plugin/skills/pr-loop/scripts/ready.py   # unblocked tasks in this source repo
+backlog task list --ready --plain                 # unblocked tasks, once `backlog init` has run
 ```
 
 ## Hard rules
@@ -60,8 +60,8 @@ python3 plugin/skills/pr-loop/scripts/ready.py   # unblocked tasks in this sourc
 3. **specs/ holds only three kinds of files**: invariants, output contracts, ADRs
    (each ADR gets the 3-line header + `---` fold, groundwork GW-006; the ADR
    digest is `specs/decisions/INDEX.md`, one line per ADR).
-   No plans in specs/ — task state lives only in `tasks/` (TODO.md working
-   set + DONE.md index); ad-hoc task lists live in the session.
+   No plans in specs/ — task state lives only in Backlog.md (`backlog/`);
+   ad-hoc task lists live in the session.
 4. **No mocked results.** If a live dependency is unreachable, fail loudly; never
    fabricate output to make a run look green.
 5. Commits go through the pre-commit test gate. `--no-verify` is for emergencies
@@ -84,22 +84,22 @@ python3 plugin/skills/pr-loop/scripts/ready.py   # unblocked tasks in this sourc
 5. New tests into the suite → back to 3
 6. Gate green → commit
 
-For a full tasks/TODO.md task that should end in a PR, run the loop through
+For a full Backlog.md task that should end in a PR, run the loop through
 **`/pr-loop <task-id>`** on Claude Code or **`$pr-loop <task-id>`** on Codex
-(`next` selects the next task): one orchestrator session
-drives implement → deterministic analysis/Ponytail preflight → gate → adaptive
-review → batched repair → delta verification. The default budget is two reviewer
-calls; a third needs explicit human approval (groundwork GW-009). Before each
-subagent spawn, route routine bounded work to Sonnet-level on Claude or
-Luna-/Terra-level on Codex, explicitly using Opus-level-or-stronger /
-Sol-level-or-stronger for high-risk or full review (GW-011). Keep the orchestrator
-itself at that capability floor; newer stronger tiers qualify, and only bounded
-subagents route downward (GW-012, GW-014). A finding blocks
-only if it is in scope, evidence-backed, and confidence ≥0.80 — everything else
-becomes Debt, not another round. The PR carries role-tagged structured findings
-and an evidence pack, never agent chatter. Independent tasks
-(`Depends:` satisfied — the plugin's `ready.py` lists them) can run as parallel pr-loop
-sessions. Protocol: `plugin/skills/pr-loop/SKILL.md`.
+(`next` selects the first ready task): one orchestrator session drives
+implement → deterministic analysis/Ponytail preflight → gate → probe →
+independent verification → one repair → one delta verification (GW-017).
+At most two model calls per task; what is still open after the second goes to
+the human as `Decision: not met`. Before each subagent spawn, route routine
+bounded work to Sonnet-level on Claude or Luna-/Terra-level on Codex, and use
+Opus-level-or-stronger / Sol-level-or-stronger for the verification call and
+high-risk work (GW-011). Keep the orchestrator itself at that capability floor
+(GW-012, GW-014). A finding blocks only with a reproduction and only for unmet
+acceptance, drift from the task, or wrong output; prose never blocks. Debt is
+one `--draft` line naming a case or run id. The PR carries the six-section body
+`.github/pr_check.py` enforces. Run one pr-loop session per repo at a time;
+parallel sessions were the source of every id collision the loop has seen.
+Protocol: `plugin/skills/pr-loop/SKILL.md`.
 
 `/pr-loop analyze` (Claude) or `$pr-loop analyze` (Codex) produces the read-only
 review plan without starting delivery.

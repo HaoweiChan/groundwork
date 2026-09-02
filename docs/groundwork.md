@@ -80,68 +80,65 @@ failing eval case → implement (invariant hook watching) → cold review
 ## Delivery loop (`/pr-loop` on Claude Code, `$pr-loop` on Codex)
 
 For a full task that ends in a PR, the human is not the message broker between
-an implementer session and a reviewer session. The orchestrator also prevents
-the agents from repeatedly paying to rediscover the same repository context:
+an implementer session and a reviewer session. pr-loop is a closed control
+loop in the loop-engineering sense — sensors (the repo's gate and the task's
+live probe), an actuator (the implementer), and an independent controller (the
+verifier) — with no human inside it (GW-017). It iterates over tasks; inside
+one task it makes at most two model calls:
 
 ```
-SPEC → IMPLEMENT → ANALYZE/PREFLIGHT → GATE → ADAPTIVE REVIEW
-REVIEW ─ approve → EVIDENCE → HUMAN
-REVIEW ─ findings → REPAIR → ANALYZE/PREFLIGHT → GATE → DELTA VERIFY
-DELTA VERIFY ─ approve → EVIDENCE; open after call 2 → CONVERGE
-CONVERGE ─ BLOCKING remains → bounded repair/verify; rest → debt → EVIDENCE
-CONVERGE ─ true anomaly (defect-moved | dispute | high-blocked) → HUMAN
+SPEC → IMPLEMENT → ANALYZE/PREFLIGHT → GATE → PROBE → VERIFY (call 1)
+VERIFY ─ met → EVIDENCE → HUMAN
+VERIFY ─ blocking findings → REPAIR (once) → GATE → PROBE → RE-VERIFY (call 2)
+RE-VERIFY ─ met → EVIDENCE → HUMAN;  not met → EVIDENCE (Decision: not met) → HUMAN
 ```
 
-Agents own execution and adversarial review, the repo's gate owns objective
-pass/fail, humans retain spec and merge authority. Before any reviewer call, a
-stdlib analyzer turns the diff and an existing Graphify graph (when present)
-into a compact impact/risk/context packet; Ponytail questions about new surface
-must be resolved; a red gate returns directly to repair. The first reviewer
-call is focused or full according to risk. If repair is needed, the second call
-verifies only standing findings plus the repair diff. Past that budget, pr-loop
-converges automatically instead of asking (GW-015): only a red gate, a real
-HIGH wrong-output, or a false published claim stays BLOCKING and may spend a
-further bounded call; everything else becomes prioritized debt, and the human
-is asked only for the three true anomalies below.
+Agents own execution and verification, the repo's gate and the task's probe own
+objective pass/fail, humans retain spec and merge authority. Before the model
+call, a stdlib analyzer turns the diff and an existing Graphify graph (when
+present) into a compact impact/risk/context packet; Ponytail questions about
+new surface must be resolved; a red gate or a failed probe returns to the
+implementer without spending a call. The verifier answers three questions —
+acceptance met, drift from the task, wrong output on realistic input — and a
+finding blocks only with a reproduction. Prose, naming, and documentation are
+never findings. If anything blocks, one batched repair, then one delta
+verification. What is still open after that goes to the human as
+`Decision: not met`; there is no third call and nothing that asks the human to keep going.
 
-Before every subagent spawn, the orchestrator also chooses the least expensive
-adequate capability level (GW-011, GW-014): Sonnet-level for bounded Claude work,
-Luna-level for mechanical Codex work, and Terra-level for ordinary Codex
-implementation/focused verification. High-risk or full review, cross-cutting
-design, security/safety impact, ambiguity, and a failed smaller-model attempt
+Before every subagent spawn, the orchestrator chooses the least expensive
+adequate capability level (GW-011, GW-014): Sonnet-level for bounded Claude
+work, Luna-level for mechanical Codex work, Terra-level for ordinary Codex
+implementation and delta verification. Call 1 verification, high-risk or full
+analysis, security/safety impact, ambiguity, and a failed smaller-model attempt
 require Opus-level or stronger on Claude and Sol-level or stronger on Codex. An
-initial task/repository risk screen protects the pre-diff implementer spawn. The
-ledger records every attempt and substitution; model routing does not change
-isolation, gates, or call limits.
+initial task/repository risk screen protects the pre-diff implementer spawn.
+The ledger records every attempt and substitution; routing does not change
+isolation, gates, or the call limit.
 
 The orchestrator is outside that routing table (GW-012, GW-014). It stays at
 Opus-level or stronger in Claude Code and Sol-level or stronger in Codex because
-it owns global risk classification, state transitions, budgets, and circuit
-breakers. Newer stronger tiers qualify automatically. A lower-tier parent stops
-before SPEC—or at any later model checkpoint—and asks the human to switch or
-restart. A hidden exact model ID is not itself a stop when the capability tier is
-known. Every check is recorded separately from subagent model routes.
+it owns risk classification, state transitions, and the budget. Newer stronger
+tiers qualify automatically. A lower-tier parent stops before SPEC — or at any
+later checkpoint — and asks the human to switch or restart. Every check is
+recorded separately from subagent model routes.
 
-The PR is an **evidence ledger**, not a communication bus: bounded role-tagged
-comments, committed JSON findings, and a current evidence body. The metrics line
-in `tasks/pr-loop-ledger.jsonl` records findings and repair outcomes plus review
-calls/mode and actual reviewer tokens when exposed, so verification cost is
-measured rather than guessed.
+The PR is an **evidence ledger**, not a communication bus: the six-section body
+that `.github/pr_check.py` enforces (Why, What changed, Verification, Problems
+found, Follow-ups, Reviewer notes), one committed findings JSON per PR, and one
+verifier comment. `tasks/pr-loop-ledger.jsonl` records findings, repair
+outcomes, calls spent, probe run ids and cost, and actual reviewer tokens when
+exposed.
 
-Four rules keep the loop convergent (GW-002, GW-009, GW-015): a finding blocks
-only if it breaks acceptance, the gate, or a published claim; blocking also
-needs concrete evidence and confidence at least 0.80; repair is batched before
-one delta verification; and past the default budget, convergence mode demotes
-anything but a red gate, a real HIGH wrong-output, or a false published claim
-to debt instead of asking a human to keep going. Everything else becomes a
-**Debt** task in `tasks/TODO.md`, with a mandatory `Priority:` when convergence
-created it. Task blocks carry `Depends:` so independent tasks can run
-as parallel pr-loop sessions on isolated `task/<id>` worktree branches. Codex
-creates the worktree before spawning an implementer and gives the implementer
-its absolute path as the mandatory working directory. The plugin's `ready.py`
-lists what is unblocked, sorted by priority. TODO.md stays small by design:
-it holds only Queue and Debt; merged work becomes a one-liner in
-`tasks/DONE.md`, and agents read single task blocks, never the whole file.
+Task state lives in Backlog.md, one file per task. SPEC reads
+`backlog task list --ready --plain` and one `backlog task view <id> --plain`,
+never the board. A task is eligible only if its acceptance can be checked inside
+the PR and it declares a `Probe:` line (a live command with a budget, or `none`
+with a structural reason). A task whose probe must run on a post-merge deploy
+stays open under the same id until that probe is green — the same problem never
+reopens under a new number. Debt is one `backlog task create --draft` line that
+names a `case <id>` or `run <id>`; drafts are invisible to the working set until
+a human promotes one. Codex creates the task worktree before spawning an
+implementer and gives it the absolute path as the mandatory working directory.
 
 ## Repo map
 
@@ -165,7 +162,7 @@ CLAUDE.md / AGENTS.md facts layer — working rules including the ## Gate sectio
 .agents/plugins/     Codex repo marketplace
 .claude/hooks/       post-edit invariant runner · session prompt logger
 .githooks/           pre-commit eval gate (installed via core.hooksPath)
-tasks/               TODO.md (Queue / Debt — working set) + DONE.md (one-line merged index)
+backlog/             Backlog.md task store (one file per task; drafts/ hold debt; completed/ holds merged work)
 specs/               ONLY three kinds: invariants · output contracts · the PROJECT's ADRs
 evals/run.py         stdlib-only runner — defines the case + adapter contract
 plugin/skills/pr-loop/scripts/analyze.py  stdlib-only review planner; consumes diff + optional existing graph

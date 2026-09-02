@@ -199,37 +199,20 @@ class AnalyzeTests(unittest.TestCase):
 
 
 class ReviewProtocolTests(unittest.TestCase):
+    """The analyzer packet still selects review depth; the loop shape is
+    contracted in test_pr_loop_v4.py (GW-017)."""
+
     @classmethod
     def setUpClass(cls):
         cls.skill = (PLUGIN / "skills" / "pr-loop" / "SKILL.md").read_text()
         cls.reviewer = (PLUGIN / "agents" / "pr-reviewer.md").read_text()
 
-    def test_confidence_routes_to_repair_clarify_or_debt(self):
-        self.assertIn("confidence at least 0.50", self.reviewer)
-        for route in ("repair", "clarify", "debt"):
-            self.assertIn(f"`{route}`", self.skill)
-
-    def test_review_envelope_and_circuit_breaker_are_defined(self):
+    def test_review_envelopes_are_defined(self):
         self.assertIn('"result":"APPROVED|REQUEST_CHANGES"', self.reviewer)
         self.assertIn('"result":"APPROVED|OPEN"', self.reviewer)
-        self.assertIn("clarification without new evidence becomes `DEBT`", self.reviewer)
-        self.assertIn("repair-regression` opens the circuit breaker", self.skill)
-
-    def test_convergence_mode_replaces_ask_every_time_breaker(self):
-        # GW-015: after call 2, the loop converges on its own -- no human
-        # prompt just to keep going, and the only escalations left are the
-        # three named anomalies.
-        self.assertIn("### Convergence mode", self.skill)
-        self.assertIn("no human prompt", self.skill)
-        for anomaly in ("defect-moved", "dispute", "high-blocked"):
-            self.assertIn(anomaly, self.skill)
-        # the old ask-every-time phrasing must be gone, not just supplemented
-        self.assertNotIn("The human must explicitly\nchoose A", self.skill)
-        self.assertNotIn("option A one more bounded repair/verification", self.skill)
-
-    def test_todo_format_documents_priority(self):
-        self.assertIn("Priority: P1", self.skill)
-        self.assertIn("mandatory on Debt", self.skill)
+        self.assertIn("analysis packet", self.skill)
+        self.assertIn("`focused`", self.skill)
+        self.assertIn("`full`", self.skill)
 
 
 if __name__ == "__main__":

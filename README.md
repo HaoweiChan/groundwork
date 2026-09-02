@@ -72,7 +72,7 @@ so setup does not depend on the marketplace checkout remaining available. The
 package follows OpenAI's
 [Codex plugin structure](https://developers.openai.com/plugins/build/plugins#plugin-structure).
 
-The initializer scaffolds `tasks/` (pr-loop queue), a `## Gate` section in the
+The initializer runs `backlog init` (the Backlog.md task store pr-loop reads one task at a time), adds a `## Gate` section in the
 host's project instruction file, optional enforcement hooks, and a
 `.groundwork-version` marker. The delivery loop runs against whatever gate the
 repo already has. On Codex, implementers work in a real Git worktree and
