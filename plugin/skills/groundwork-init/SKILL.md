@@ -104,6 +104,15 @@ branch, additively, in this order. Say "upgrade groundwork" to run it.
    finish or close them by hand. Then `git rm tasks/TODO.md tasks/DONE.md`;
    git history keeps every block. Keep `tasks/pr-loop-ledger.jsonl` and
    `tasks/reviews/`.
+   **Then grep the repo for checks that read the retired files** —
+   `grep -rn "TODO.md\|DONE.md" src evals .githooks .github` — before running
+   the gate. Both measured repos had repo-hygiene cases (`adr-header-and-index`,
+   `docs-numbers-are-derived`, `report-citations-resolve`, `ledger-line-refs`,
+   `ledger-table-shape`, bench `DOC_FILES`) that open `tasks/TODO.md` directly
+   and go red the moment it is gone. A check whose only subject was the ledger
+   is retired with it (delete the case, say so in the PR); a check that swept
+   the ledger among other files skips it when absent. Never `--update-baseline`
+   past this.
 2. **PR shape.** Copy `.github/PULL_REQUEST_TEMPLATE.md`, `.github/pr_check.py`,
    `.github/workflows/pr-check.yml`, and `.githooks/commit-msg` from the
    scaffold; `chmod +x .githooks/commit-msg`.
