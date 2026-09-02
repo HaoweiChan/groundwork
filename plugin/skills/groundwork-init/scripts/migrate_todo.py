@@ -19,7 +19,7 @@ import subprocess
 import sys
 
 ID = r"[A-Z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)+|[A-Z][A-Za-z0-9]*\d[A-Za-z0-9]*"
-HEAD = re.compile(rf"^#{{2,3}}\s+({ID})\s+—\s+(.*?)\s*\[status:\s*([a-z-]+)\]", re.M)
+HEAD = re.compile(rf"^#{{2,3}}\s+({ID})\s+—\s+(.*)\s*\[status:\s*([a-z-]+)\]\s*$", re.M)  # greedy: a title may quote a status
 SECTION = re.compile(r"^## (.+?)\s*$", re.M)
 FIELD = re.compile(r"^([A-Z][A-Za-z ]+):\s*(.*)$")
 PRIORITY = {"P1": "high", "P2": "medium", "P3": "low"}
@@ -52,7 +52,7 @@ def blocks(text):
             elif key and lines[i].strip():
                 fields[key] = (fields[key] + " " + lines[i].strip()).strip()
             i += 1
-        yield section, head.group(1), head.group(2), head.group(3), fields
+        yield section, head.group(1), head.group(2).strip(), head.group(3), fields
 
 
 def commands(text, env=None):

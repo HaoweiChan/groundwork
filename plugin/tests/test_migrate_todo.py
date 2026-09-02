@@ -78,6 +78,12 @@ class MigrateTests(unittest.TestCase):
         self.assertFalse(any("centralize model policy" in t for t in titles))
         self.assertEqual(2, len(self.cmds))
 
+    def test_status_is_read_from_the_end_even_when_the_title_quotes_a_status(self):
+        todo = "## Debt\n\n### M45-D10 — a block's `[status: pr]` outlives its PR            [status: todo]\nSpec: x.\n"
+        cmds = self.m.commands(todo)
+        self.assertEqual(1, len(cmds))
+        self.assertIn("[status: pr]", cmds[0][3])
+
     def test_backlog_binary_comes_from_the_environment(self):
         self.assertEqual(["backlog"], self.m.backlog_bin({}))
         self.assertEqual(["npx", "-y", "backlog.md"], self.m.backlog_bin({"BACKLOG": "npx -y backlog.md"}))
