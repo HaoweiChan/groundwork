@@ -52,9 +52,9 @@ class MigrateTests(unittest.TestCase):
         cls.cmds = cls.m.commands(TODO)
 
     def test_queue_todo_becomes_a_task_with_ac_dep_and_priority(self):
-        cmd = next(c for c in self.cmds if "live finance promotion campaign" in c[3])
+        cmd = next(c for c in self.cmds if "live finance promotion campaign" in c[-1])
         self.assertEqual(["backlog", "task", "create"], cmd[:3])
-        self.assertEqual(3, cmd.index("live finance promotion campaign"))
+        self.assertEqual("live finance promotion campaign", cmd[-1])
         self.assertIn("--priority", cmd); self.assertEqual("high", cmd[cmd.index("--priority") + 1])
         self.assertNotIn("--dep", cmd)  # old ids are not Backlog.md ids
         self.assertIn("--ac", cmd)
@@ -67,14 +67,14 @@ class MigrateTests(unittest.TestCase):
         self.assertIn("Probe: none — migrated from TODO.md", desc)
 
     def test_debt_todo_becomes_a_draft_with_origin_as_ref(self):
-        cmd = next(c for c in self.cmds if "two clean branches collide" in c[3])
+        cmd = next(c for c in self.cmds if "two clean branches collide" in c[-1])
         self.assertIn("--draft", cmd)
         self.assertIn("debt", cmd[cmd.index("-l") + 1])
         self.assertIn("T-M39-15, cross-branch near-miss 2026-08-28", cmd)
         self.assertIn("TODO.md T-M39-15-D2", cmd)  # the old id always survives, Origin or not
 
     def test_done_and_pr_blocks_are_skipped(self):
-        titles = [c[3] for c in self.cmds]
+        titles = [c[-1] for c in self.cmds]
         self.assertFalse(any("closed long ago" in t for t in titles))
         self.assertFalse(any("centralize model policy" in t for t in titles))
         self.assertEqual(2, len(self.cmds))
@@ -83,13 +83,29 @@ class MigrateTests(unittest.TestCase):
         todo = "## Debt\n\n### M45-D10 — a block's `[status: pr]` outlives its PR            [status: todo]\nSpec: x.\n"
         cmds = self.m.commands(todo)
         self.assertEqual(1, len(cmds))
-        self.assertIn("[status: pr]", cmds[0][3])
+        self.assertIn("[status: pr]", cmds[0][-1])
 
     def test_backlog_binary_comes_from_the_environment(self):
         self.assertEqual(["backlog"], self.m.backlog_bin({}))
         self.assertEqual(["npx", "-y", "backlog.md"], self.m.backlog_bin({"BACKLOG": "npx -y backlog.md"}))
         cmd = self.m.commands(TODO, env={"BACKLOG": "npx -y backlog.md"})[0]
         self.assertEqual(["npx", "-y", "backlog.md", "task", "create"], cmd[:5])
+
+    def test_title_goes_after_the_option_terminator(self):
+        # a title starting with "-" must not be parsed as an option (kuroshio T27)
+        todo = "## Debt\n\n### T27 — --provider has no test [status: todo]\nSpec: x.\n"
+        cmd = self.m.commands(todo)[0]
+        self.assertEqual("--", cmd[-2]); self.assertEqual("--provider has no test", cmd[-1])
+        self.assertNotIn("--provider has no test", cmd[:-1])
+
+    def test_already_migrated_ids_are_skipped(self):
+        # rerunnable: a block whose old id is already referenced in backlog/ is not created twice
+        import tempfile, pathlib
+        with tempfile.TemporaryDirectory() as d:
+            (pathlib.Path(d) / "drafts").mkdir(); (pathlib.Path(d) / "tasks").mkdir()
+            (pathlib.Path(d) / "drafts" / "draft-1 - x.md").write_text("---\nreferences:\n  - TODO.md T-M39-15-D2\n---\n")
+            cmds = self.m.commands(TODO, backlog_dir=d)
+            self.assertEqual(1, len(cmds)); self.assertIn("TODO.md M52", cmds[0])
 
     def test_dry_run_prints_shell_lines(self):
         lines = self.m.render(self.cmds)

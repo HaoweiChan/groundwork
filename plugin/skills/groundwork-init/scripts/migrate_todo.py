@@ -55,18 +55,32 @@ def blocks(text):
         yield section, head.group(1), head.group(2).strip(), head.group(3), fields
 
 
-def commands(text, env=None):
+def migrated_ids(backlog_dir):
+    """Old ids already referenced under backlog/ — rerunning skips them."""
+    if not backlog_dir or not os.path.isdir(backlog_dir):
+        return set()
+    found = set()
+    for root, _dirs, files in os.walk(backlog_dir):
+        for name in files:
+            if name.endswith(".md"):
+                with open(os.path.join(root, name), encoding="utf-8") as fh:
+                    found.update(re.findall(r"TODO\.md (\S+)", fh.read()))
+    return found
+
+
+def commands(text, env=None, backlog_dir=None):
     bin_ = backlog_bin(os.environ if env is None else env)
+    done = migrated_ids(backlog_dir)
     out = []
     for section, tid, title, status, f in blocks(text):
-        if status != "todo":
+        if status != "todo" or tid in done:
             continue
         debt = section.lower().startswith("debt")
         desc = f.get("Spec", "").strip() or title
         if f.get("Depends"):  # old ids do not exist in Backlog.md; keep them readable, not as --dep
             desc += f"\n\nDepends (TODO.md ids): {f['Depends'].strip()}"
         desc += "\n\nProbe: none — migrated from TODO.md"
-        cmd = bin_ + ["task", "create", title, "-d", desc, "--ref", f"TODO.md {tid}"]
+        cmd = bin_ + ["task", "create", "-d", desc, "--ref", f"TODO.md {tid}"]
         if f.get("Origin"):
             cmd += ["--ref", f["Origin"]]
         if f.get("Acceptance"):
@@ -75,6 +89,7 @@ def commands(text, env=None):
             cmd += ["--priority", PRIORITY[f["Priority"]]]
         if debt:
             cmd += ["--draft", "-l", "debt"]
+        cmd += ["--", title]  # after the option terminator: a title may start with "-"
         out.append(cmd)
     return out
 
@@ -89,7 +104,7 @@ def main(argv=None):
     argv = [a for a in argv if a != "--run"]
     path = argv[0] if argv else "tasks/TODO.md"
     with open(path, encoding="utf-8") as fh:
-        cmds = commands(fh.read())
+        cmds = commands(fh.read(), backlog_dir="backlog")  # rerunnable: skips ids already in backlog/
     if not run:
         print("\n".join(render(cmds)))
         return 0
