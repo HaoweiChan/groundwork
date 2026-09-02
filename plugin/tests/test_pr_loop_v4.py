@@ -79,6 +79,9 @@ class TaskStoreTests(unittest.TestCase):
         self.assertFalse((SKILL_DIR / "scripts" / "ready.py").exists())
         self.assertFalse((SCAFFOLD / "tasks").exists())
         self.assertIn("backlog init", self.init)
+        self.assertIn("## Upgrading a repo initialized before 0.6", self.init)
+        for step in ("migrate_todo.py", "tasks/TODO.md", ".githooks/commit-msg", ".groundwork-version"):
+            self.assertIn(step, self.init.split("## Upgrading a repo initialized before 0.6")[1], step)
 
 
 class EvidenceTests(unittest.TestCase):

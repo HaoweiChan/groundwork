@@ -6,11 +6,13 @@
 
 Only `[status: todo]` blocks move: Queue blocks become tasks, Debt blocks become
 drafts. pr/in-progress/done blocks are in flight or finished and stay in git
-history. Old ids survive as `--ref`. Stdlib only.
+history. Old ids survive as `--ref`. Set BACKLOG="npx -y backlog.md" when the CLI is
+not installed. Stdlib only.
 
 ponytail: line-regex parser over the retired TODO.md block format; it exists
 only to migrate, not to keep that format alive.
 """
+import os
 import re
 import shlex
 import subprocess
@@ -21,6 +23,11 @@ HEAD = re.compile(rf"^#{{2,3}}\s+({ID})\s+—\s+(.*?)\s*\[status:\s*([a-z-]+)\]"
 SECTION = re.compile(r"^## (.+?)\s*$", re.M)
 FIELD = re.compile(r"^([A-Z][A-Za-z ]+):\s*(.*)$")
 PRIORITY = {"P1": "high", "P2": "medium", "P3": "low"}
+
+
+def backlog_bin(env):
+    """`BACKLOG="npx -y backlog.md"` when the CLI is not on PATH."""
+    return shlex.split(env.get("BACKLOG") or "backlog")
 
 
 def blocks(text):
@@ -48,20 +55,21 @@ def blocks(text):
         yield section, head.group(1), head.group(2), head.group(3), fields
 
 
-def commands(text):
+def commands(text, env=None):
+    bin_ = backlog_bin(os.environ if env is None else env)
     out = []
     for section, tid, title, status, f in blocks(text):
         if status != "todo":
             continue
         debt = section.lower().startswith("debt")
         desc = f.get("Spec", "").strip() or title
+        if f.get("Depends"):  # old ids do not exist in Backlog.md; keep them readable, not as --dep
+            desc += f"\n\nDepends (TODO.md ids): {f['Depends'].strip()}"
         desc += "\n\nProbe: none — migrated from TODO.md"
-        cmd = ["backlog", "task", "create", title, "-d", desc,
+        cmd = bin_ + ["task", "create", title, "-d", desc,
                "--ref", f.get("Origin") or f"TODO.md {tid}"]
         if f.get("Acceptance"):
             cmd += ["--ac", f["Acceptance"]]
-        if f.get("Depends"):
-            cmd += ["--dep", ",".join(d.strip() for d in f["Depends"].split(","))]
         if f.get("Priority") in PRIORITY:
             cmd += ["--priority", PRIORITY[f["Priority"]]]
         if debt:

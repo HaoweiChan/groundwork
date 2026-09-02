@@ -89,6 +89,37 @@ files. No network is needed.
    declined, and the host's two entry points — `/pr-loop next` on Claude Code or
    `$pr-loop next` on Codex, plus the ready script resolved from the skill path.
 
+## Upgrading a repo initialized before 0.6
+
+A repo that adopted groundwork while pr-loop still read `tasks/TODO.md`
+(plugin < 0.6.0, `.groundwork-version` older than GW-017) upgrades in one
+branch, additively, in this order. Say "upgrade groundwork" to run it.
+
+1. **Task store.** `backlog init --defaults` (or `npx -y backlog.md init
+   --defaults`) if `backlog/config.yml` is missing. Then migrate the open
+   blocks: `BACKLOG="npx -y backlog.md" python3
+   <this-skill-dir>/scripts/migrate_todo.py tasks/TODO.md --run`. Queue
+   `[status: todo]` blocks become tasks, Debt blocks become drafts, old ids
+   survive as `--ref`. `pr`/`in-progress`/`done` blocks are not migrated —
+   finish or close them by hand. Then `git rm tasks/TODO.md tasks/DONE.md`;
+   git history keeps every block. Keep `tasks/pr-loop-ledger.jsonl` and
+   `tasks/reviews/`.
+2. **PR shape.** Copy `.github/PULL_REQUEST_TEMPLATE.md`, `.github/pr_check.py`,
+   `.github/workflows/pr-check.yml`, and `.githooks/commit-msg` from the
+   scaffold; `chmod +x .githooks/commit-msg`.
+3. **Instructions.** In `CLAUDE.md` / `AGENTS.md`: replace every mention of
+   `tasks/TODO.md`, `tasks/DONE.md`, and `ready.py` with the Backlog.md
+   commands (`backlog task list --ready --plain`, `backlog task view <id>
+   --plain`); replace the pr-loop paragraph with the v4 shape (two model
+   calls, probe, `Decision: not met`); add the one-shape commit/PR title rule.
+   Do not rewrite anything else in those files.
+4. **Tasks need a probe.** Every migrated task carries `Probe: none — migrated
+   from TODO.md`. Before running `/pr-loop` on one, edit that line to a real
+   probe command with a budget, or leave `none` with a structural reason.
+5. **Version marker.** Overwrite `.groundwork-version` with the new upstream
+   commit hash. Commit as `chore(groundwork): upgrade to pr-loop v4` and open
+   the PR with the six-section body.
+
 ## What NEVER happens here
 
 - README.md is never created, edited, or templated — the project's front door

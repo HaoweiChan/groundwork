@@ -54,14 +54,16 @@ class MigrateTests(unittest.TestCase):
     def test_queue_todo_becomes_a_task_with_ac_dep_and_priority(self):
         cmd = next(c for c in self.cmds if "live finance promotion campaign" in c[3])
         self.assertEqual(["backlog", "task", "create"], cmd[:3])
+        self.assertEqual(3, cmd.index("live finance promotion campaign"))
         self.assertIn("--priority", cmd); self.assertEqual("high", cmd[cmd.index("--priority") + 1])
-        self.assertIn("--dep", cmd); self.assertEqual("M51", cmd[cmd.index("--dep") + 1])
+        self.assertNotIn("--dep", cmd)  # old ids are not Backlog.md ids
         self.assertIn("--ac", cmd)
         self.assertIn("zero wrong-success; each workflow 3/3 on the first pass.", cmd)
         self.assertIn("--ref", cmd); self.assertEqual("TODO.md M52", cmd[cmd.index("--ref") + 1])
         self.assertNotIn("--draft", cmd)
         desc = cmd[cmd.index("-d") + 1]
         self.assertTrue(desc.startswith("run a new, separately authorized"))
+        self.assertIn("Depends (TODO.md ids): M51", desc)
         self.assertIn("Probe: none — migrated from TODO.md", desc)
 
     def test_debt_todo_becomes_a_draft_with_origin_as_ref(self):
@@ -75,6 +77,12 @@ class MigrateTests(unittest.TestCase):
         self.assertFalse(any("closed long ago" in t for t in titles))
         self.assertFalse(any("centralize model policy" in t for t in titles))
         self.assertEqual(2, len(self.cmds))
+
+    def test_backlog_binary_comes_from_the_environment(self):
+        self.assertEqual(["backlog"], self.m.backlog_bin({}))
+        self.assertEqual(["npx", "-y", "backlog.md"], self.m.backlog_bin({"BACKLOG": "npx -y backlog.md"}))
+        cmd = self.m.commands(TODO, env={"BACKLOG": "npx -y backlog.md"})[0]
+        self.assertEqual(["npx", "-y", "backlog.md", "task", "create"], cmd[:5])
 
     def test_dry_run_prints_shell_lines(self):
         lines = self.m.render(self.cmds)

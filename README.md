@@ -108,7 +108,11 @@ codex plugin marketplace upgrade groundwork
 codex plugin add groundwork@groundwork
 ```
 
-Start a new task after updating so Codex reloads the skills. Scaffold files
+Start a new task after updating so Codex reloads the skills. A repo initialized
+before 0.6.0 (pr-loop still reading `tasks/TODO.md`) follows the
+"Upgrading a repo initialized before 0.6" steps in the `groundwork-init` skill:
+Backlog.md store, `migrate_todo.py`, PR shape files, instruction edits,
+version marker. Scaffold files
 (eval runner, hooks, task queue) belong to the adopting repo after initialization;
 update them deliberately and bump `.groundwork-version`. Rationale is referenced
 (`GW-*` numbers), never copied into `specs/decisions/`.
