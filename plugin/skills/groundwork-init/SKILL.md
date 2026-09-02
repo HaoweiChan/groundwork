@@ -52,6 +52,11 @@ files. No network is needed.
    has its own pre-commit stack (husky, pre-commit.com), integrate with it
    instead of replacing it. Skip cleanly if declined — pr-loop still works;
    the gate just runs only inside the loop.
+   Also offer the PR shape: copy `.github/PULL_REQUEST_TEMPLATE.md`,
+   `.github/pr_check.py`, and `.github/workflows/pr-check.yml` from the
+   scaffold (skip any that exist). The workflow fails a PR whose title is not
+   `<type>(<scope>)?: <lowercase summary>` or whose body is missing one of the
+   six sections — the same shape for every author, human or agent.
 
 5. **Toolchain (ask first — this enables plugins and adds a skill).** Offer
    two optional additions, each independently declinable:
