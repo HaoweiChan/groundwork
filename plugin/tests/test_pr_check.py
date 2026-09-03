@@ -29,6 +29,17 @@ GOOD_BODY = textwrap.dedent("""
     SEC 10-K homepage flow failed live: the planner read the page before the
     async result list rendered (deployed run 69f204dc, failure:locate).
 
+    <details><summary>Task (verbatim): task-12 — settle after async submit</summary>
+
+    > ## Description
+    > Observation reads the page before the async result list renders.
+    >
+    > Probe: run 69f204dc ×1 · $0.01
+    >
+    > ## Acceptance Criteria
+    > - [ ] #1 sec-homepage-async-submit green
+    </details>
+
     ## What changed
     - After a button-driven submit, observation waits for pending fetches to settle.
     Not changed: site-specific selectors.
@@ -155,6 +166,21 @@ class BodyTests(unittest.TestCase):
     def test_reviewer_notes_need_start_and_reproduce(self):
         body = GOOD_BODY.replace("Reproduce: python3 -m evals.run --suite fast --case sec-homepage-async-submit", "")
         self.assertTrue(any("Reproduce:" in e for e in self.errors(body)))
+
+    def test_blockquoted_task_headings_are_not_sections(self):
+        # the task's own "## Description" / "## Acceptance Criteria" live inside a
+        # blockquote so GitHub renders them and the six-section split ignores them
+        self.assertEqual([], self.errors(GOOD_BODY))
+        self.assertIn("> ## Description", GOOD_BODY)
+
+    def test_unquoted_extra_heading_fails(self):
+        # a raw paste of `backlog task view --plain` adds top-level sections; refuse it
+        body = GOOD_BODY.replace("> ## Description", "## Description")
+        self.assertTrue(any("Description" in e and "> " in e for e in self.errors(body)),
+                        self.errors(body))
+
+    def test_template_tells_the_author_to_blockquote_the_task(self):
+        self.assertIn('prefixed with "> "', TEMPLATE.read_text())
 
     def test_html_comments_do_not_count_as_content(self):
         body = GOOD_BODY.replace(

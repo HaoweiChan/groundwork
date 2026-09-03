@@ -259,7 +259,10 @@ orchestrator fills it from the artifacts it already holds:
 ```markdown
 ## Why
 <observed failure or goal, with run id / case id / issue>
-<details><summary>Task (verbatim)</summary>output of `backlog task view <id> --plain`, pasted once</details>
+<details><summary>Task (verbatim): <id> — <title></summary>
+
+> <`backlog task view <id> --plain` from `## Description` down, every line prefixed with `> `>
+</details>
 
 ## What changed
 - <behavior, mechanism>
@@ -283,7 +286,9 @@ Reproduce: <one command>
 ```
 
 The body is current state, not history. `Task (verbatim)` is pasted once at PR
-creation and never edited (GW-016); `Problems found` lists what this PR met and
+creation and never edited (GW-016) — as a blockquote, never a code fence (a
+fence shows raw markdown and scrolls sideways) and never raw (its `## ` headings
+would become PR sections; `pr_check.py` rejects them); `Problems found` lists what this PR met and
 how it was settled; resolved findings do not linger as rounds.
 
 **Debt.** Every non-blocking finding with a repro, and every adjacent issue the
