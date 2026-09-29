@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Groundwork Harness Upgrade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; the pr-loop state strip and two closed loops are the page's spine; plan cards keyed to backlog task ids. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --ink: #15202b;
+  --muted: #56636f;
+  --line: #d8dee4;
+  --accent: #1d5c8f;
+  --c-token: #9a5a00;
+  --c-guard: #b0364a;
+  --c-learn: #2b7a4b;
+  --c-measure: #5a4c9f;
+  --c-up: #0f6f78;
+  --tint-accent: rgba(29,92,143,.12); --tint-token: rgba(154,90,0,.12); --tint-guard: rgba(176,54,74,.12);
+  --tint-learn: rgba(43,122,75,.12); --tint-measure: rgba(90,76,159,.12); --tint-up: rgba(15,111,120,.12);
+  --code-bg: rgba(86,99,111,.13); --th-bg: #f7f8fa; --call-bg: #eef3f8;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1419; --surface: #161d24; --ink: #e2e8ee; --muted: #9aa7b3; --line: #29333d;
+    --accent: #70b1e8; --c-token: #e2a24c; --c-guard: #ef7f8d; --c-learn: #6cc590; --c-measure: #aa9deb; --c-up: #5cc6cf;
+    --tint-accent: rgba(112,177,232,.16); --tint-token: rgba(226,162,76,.16); --tint-guard: rgba(239,127,141,.16);
+    --tint-learn: rgba(108,197,144,.16); --tint-measure: rgba(170,157,235,.16); --tint-up: rgba(92,198,207,.16);
+    --code-bg: rgba(154,167,179,.16); --th-bg: #1a2129; --call-bg: #182532;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1419; --surface: #161d24; --ink: #e2e8ee; --muted: #9aa7b3; --line: #29333d;
+  --accent: #70b1e8; --c-token: #e2a24c; --c-guard: #ef7f8d; --c-learn: #6cc590; --c-measure: #aa9deb; --c-up: #5cc6cf;
+  --tint-accent: rgba(112,177,232,.16); --tint-token: rgba(226,162,76,.16); --tint-guard: rgba(239,127,141,.16);
+  --tint-learn: rgba(108,197,144,.16); --tint-measure: rgba(170,157,235,.16); --tint-up: rgba(92,198,207,.16);
+  --code-bg: rgba(154,167,179,.16); --th-bg: #1a2129; --call-bg: #182532;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.6;
+  padding-inline: 16px; padding-block: 40px 72px;
+}
+.wrap { max-width: 880px; margin: 0 auto; display: grid; gap: 56px; }
+section { display: grid; gap: 18px; min-width: 0; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2rem, 5vw, 2.9rem); font-weight: 800; font-stretch: 82%; line-height: 1.05; }
+h2 { font-size: 1.55rem; font-weight: 750; font-stretch: 88%; line-height: 1.2; }
+h3 { font-size: 1.08rem; font-weight: 700; font-stretch: 95%; line-height: 1.3; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+code { background: var(--code-bg); padding: 0.08em 0.35em; border-radius: 3px; overflow-wrap: anywhere; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.1rem; max-width: 64ch; }
+.muted { color: var(--muted); }
+
+header { display: grid; gap: 14px; border-bottom: 1px solid var(--line); padding-bottom: 28px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.9rem; }
+
+.chip {
+  --c: var(--accent); --t: var(--tint-accent);
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em;
+  color: var(--c); background: var(--t);
+  padding: 1px 8px; border-radius: 999px; white-space: nowrap;
+}
+.t-token { --c: var(--c-token); --t: var(--tint-token); } .t-guard { --c: var(--c-guard); --t: var(--tint-guard); }
+.t-learn { --c: var(--c-learn); --t: var(--tint-learn); } .t-measure { --c: var(--c-measure); --t: var(--tint-measure); } .t-up { --c: var(--c-up); --t: var(--tint-up); }
+
+.gaps { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.gap { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--c); padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.gap p { font-size: 0.94rem; }
+
+.scroll { overflow-x: auto; border: 1px solid var(--line); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--th-bg); }
+td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.bad { color: var(--c-guard); } td.good { color: var(--c-learn); }
+.metrics td:first-child, .data td:first-child { min-width: 200px; }
+
+.theme { display: grid; gap: 10px; }
+.theme-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.findings { display: grid; border: 1px solid var(--line); background: var(--surface); }
+.finding { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: 4px 22px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.finding:last-child { border-bottom: 0; }
+.finding .claim { font-size: 0.95rem; }
+.finding .claim strong { font-weight: 600; }
+.finding .so { font-size: 0.9rem; color: var(--muted); border-left: 2px solid var(--line); padding-left: 14px; }
+.finding .src { grid-column: 1 / -1; font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
+.basis { color: var(--muted); }
+.basis.read::before { content: "● "; color: var(--c-learn); }
+.basis.summary::before { content: "○ "; }
+@media (max-width: 640px) {
+  .finding { grid-template-columns: minmax(0, 1fr); }
+  .finding .so { border-left: 0; padding-left: 0; }
+}
+
+/* pr-loop state strip */
+.loop { display: flex; flex-wrap: wrap; gap: 8px 0; align-items: stretch; }
+.state { display: grid; gap: 6px; align-content: start; padding: 10px 12px; min-width: 96px; flex: 1 1 96px; background: var(--surface); border: 1px solid var(--line); margin-right: -1px; }
+.state .name { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; }
+.state .model { font-size: 0.7rem; color: var(--muted); font-family: var(--font-mono); }
+.state.call { background: var(--call-bg); }
+.state.between { border-style: dashed; }
+.state .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 0.85rem; color: var(--muted); align-items: center; }
+
+/* closed loops */
+.flows { display: grid; gap: 16px; }
+.flowbox { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--c); padding: 16px 18px; display: grid; gap: 12px; min-width: 0; }
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.node { border: 1px solid var(--line); background: var(--bg); padding: 6px 10px; font-size: 0.86rem; line-height: 1.35; }
+.node small { display: block; font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); }
+.node.human { border-color: var(--c); }
+.arrow { color: var(--muted); font-family: var(--font-mono); font-size: 0.9rem; }
+.back { font-family: var(--font-mono); font-size: 0.76rem; color: var(--c); }
+
+/* plan */
+.wave { display: grid; gap: 14px; }
+.wave-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.task { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--c); padding: 16px 18px; display: grid; gap: 10px; min-width: 0; }
+.task-top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.task-id { font-family: var(--font-mono); font-weight: 600; font-size: 0.85rem; color: var(--c); }
+.task dl { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 6px 14px; margin: 0; font-size: 0.92rem; }
+.task dt { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding-top: 3px; }
+.task dd { margin: 0; min-width: 0; }
+@media (max-width: 560px) { .task dl { grid-template-columns: minmax(0, 1fr); } .task dt { padding-top: 6px; } }
+
+.twocol { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.box { background: var(--surface); border: 1px solid var(--line); padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box ul { margin: 0; padding-left: 1.1em; display: grid; gap: 8px; font-size: 0.93rem; }
+
+ol.decisions { margin: 0; padding-left: 1.3em; display: grid; gap: 12px; max-width: 72ch; }
+ol.sources { margin: 0; padding-left: 1.4em; display: grid; gap: 5px; font-size: 0.88rem; }
+footer { border-top: 1px solid var(--line); padding-top: 18px; font-size: 0.85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Research digest &amp; upgrade plan · groundwork plugin</div>
+  <h1>Groundwork Harness Upgrade</h1>
+  <p class="lede">What the 2025–2026 research on agent harnesses and agent loops says, how much of it Groundwork already does, and a test-first plan to make it cheaper to run, harder to game, and able to improve both the repositories that use it and Groundwork itself.</p>
+  <div class="meta">
+    <span>2026-09-29</span>
+    <span>measured at 83b66d9</span>
+    <span>decisions made · 13 tasks filed in backlog/ as TASK-1 to TASK-13</span>
+  </div>
+  <nav class="toc" aria-label="Contents">
+    <a href="#summary">Summary</a>
+    <a href="#baseline">Baseline</a>
+    <a href="#research">Research</a>
+    <a href="#fit">Already aligned</a>
+    <a href="#data">Evidence data</a>
+    <a href="#loops">Two loops</a>
+    <a href="#plan">Plan</a>
+    <a href="#not">Not doing</a>
+    <a href="#metrics">Metrics</a>
+    <a href="#decisions">Decisions</a>
+    <a href="#sources">Sources</a>
+  </nav>
+</header>
+
+<section id="summary">
+  <div class="eyebrow">Summary</div>
+  <h2>The design holds. Four gaps are worth closing.</h2>
+  <p>The field now treats the harness, not the model, as the main lever: identical models score anywhere from 68% to 88% depending on the harness around them. Groundwork was built on the bets the research now backs: deterministic checks before model calls, hooks instead of prose, a verifier that never sees the author's reasoning, and a hard cap on review rounds. The gaps are narrower than a redesign.</p>
+  <div class="gaps">
+    <div class="gap" style="--c: var(--c-token)">
+      <span class="chip t-token">token efficiency</span>
+      <h3>Context paid for on every turn</h3>
+      <p>The instruction file is 6,000 bytes loaded on every turn; pr-loop's skill is 16.9 KB loaded whole per run. Repository overviews add cost without raising success.</p>
+    </div>
+    <div class="gap" style="--c: var(--c-guard)">
+      <span class="chip t-guard">output guardrails</span>
+      <h3>Eval weakening goes unflagged</h3>
+      <p>The analyzer rewards any eval diff and never flags a deleted golden case or a baseline move. The verifier's output rules exist only as prose.</p>
+    </div>
+    <div class="gap" style="--c: var(--c-learn)">
+      <span class="chip t-learn">repo loop</span>
+      <h3>The ledger is write-only</h3>
+      <p>Every run appends to the ledger and nothing reads it, and people can't read the raw JSON. Recurring findings never become a hook, lint or case.</p>
+    </div>
+    <div class="gap" style="--c: var(--c-up)">
+      <span class="chip t-up">groundwork loop</span>
+      <h3>Groundwork doesn't learn from its users</h3>
+      <p>Nothing records which Groundwork version produced a run, so no release can be judged on real tasks, and signals about the loop itself never reach this repository.</p>
+    </div>
+  </div>
+</section>
+
+<section id="baseline">
+  <div class="eyebrow">Baseline, measured at 83b66d9</div>
+  <h2>Where Groundwork stands today</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Measure</th><th>Today</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Resident instruction file, loaded every turn</td><td class="num bad">6,000 B ≈ 1.5k tok</td><td><code>CLAUDE.md</code> = <code>AGENTS.md</code>, byte-identical, 115 lines, includes a Layout tree</td></tr>
+        <tr><td>pr-loop skill, loaded whole per run</td><td class="num bad">16,864 B ≈ 4.2k tok</td><td><code>plugin/skills/pr-loop/SKILL.md</code>, one file, no references/</td></tr>
+        <tr><td>Hook output on failure</td><td class="num bad">unbounded</td><td><code>.claude/hooks/post-edit-invariant.sh</code> echoes the full unittest log</td></tr>
+        <tr><td>Deleted/edited eval case or baseline edit flagged</td><td class="num bad">no</td><td><code>analyze.py</code> <code>classify_risk</code> only checks that some eval file changed</td></tr>
+        <tr><td>Verifier JSON rules checked by code</td><td class="num bad">no</td><td>"no repro, no block" lives in <code>pr-reviewer.md</code> and SKILL.md prose</td></tr>
+        <tr><td>Hook bypass blocked for agents</td><td class="num bad">no</td><td>no PreToolUse hook or deny rule for <code>--no-verify</code> or force-push</td></tr>
+        <tr><td><code>PR</code> status configured by init</td><td class="num bad">no</td><td><code>backlog init --defaults</code> gives To Do / In Progress / Done; pr-loop's <code>-s PR</code> fails (reproduced with Backlog.md 1.53.0)</td></tr>
+        <tr><td>Two open PRs appending to the ledger</td><td class="num bad">merge conflict</td><td>both add a line at the end of <code>tasks/pr-loop-ledger.jsonl</code></td></tr>
+        <tr><td>Readers of the evidence ledger</td><td class="num bad">0</td><td>written in pr-loop § EVIDENCE, read nowhere</td></tr>
+        <tr><td>Groundwork version on each run</td><td class="num bad">not recorded</td><td><code>.groundwork-version</code> exists (groundwork-init step 6) but the ledger ignores it</td></tr>
+        <tr><td>Model calls per task</td><td class="num good">≤ 2</td><td>GW-017, tested in <code>test_pr_loop_v4.py</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="research">
+  <div class="eyebrow">Research</div>
+  <h2>What the literature says</h2>
+  <p class="muted">Each finding has a note on what it means for Groundwork. <span class="basis read">read</span> means the abstract or article was fetched and read directly. <span class="basis summary">via summary</span> means the figure came from a search-result summary or a secondary write-up and is weaker evidence.</p>
+
+  <div class="theme">
+    <div class="theme-head"><h3>Harness engineering, the frame</h3><span class="chip">context</span></div>
+    <div class="findings">
+      <div class="finding">
+        <div class="claim"><strong>Agent = model + harness.</strong> LangChain moved from 30th to 5th on Terminal Bench 2.0 by changing only the harness. Across 8 harnesses on identical tasks, success ranged from 68% to 88%.</div>
+        <div class="so">The harness is where Groundwork competes. None of the upgrades below depend on a newer model.</div>
+        <div class="src"><a href="https://www.philschmid.de/agent-harness-2026">Schmid</a><a href="https://marmelab.com/blog/2026/09/24/the-state-of-ai-harness-engineering-2026.html">Marmelab, Sep 2026</a><span class="basis read">read (Marmelab)</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Guides and sensors.</strong> Fowler splits controls into feedforward guides and feedback sensors, each either computational (fast, deterministic) or inferential (model-based). Cheap computational checks go earliest.</div>
+        <div class="so">This is Groundwork's four-layer model in other words: ANALYZE, GATE and PROBE are computational sensors that run before the one inferential sensor, VERIFY.</div>
+        <div class="src"><a href="https://martinfowler.com/articles/harness-engineering.html">martinfowler.com</a><span class="basis read">read</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Long-running harnesses.</strong> Anthropic seeds a feature list with every item marked failing, keeps a progress file, builds one feature at a time, and verifies end to end. Its generator/evaluator split works because the evaluator never saw the generation. Each component encodes an assumption about what the model can't do, and those assumptions go stale.</div>
+        <div class="so">Red-first cases and the fresh-context verifier already match. Stale assumptions are what the version scoreboard (TASK-12) starts to measure.</div>
+        <div class="src"><a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Anthropic, Nov 2025</a><a href="https://understandingdata.com/posts/generator-evaluator-harness-design/">generator/evaluator write-up</a><span class="basis read">read</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>OpenAI's agent-first repo.</strong> About a million lines written by Codex in five months. The instruction file was cut to roughly 100 lines and used as a map, with enforcement moved into linters and structural tests.</div>
+        <div class="so">Supports a byte cap on <code>CLAUDE.md</code>/<code>AGENTS.md</code> and moving detail into files loaded on demand.</div>
+        <div class="src"><a href="https://openai.com/index/harness-engineering/">openai.com</a><span class="basis summary">via summary (direct fetch returned 403)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="theme">
+    <div class="theme-head"><h3>Token efficiency</h3><span class="chip t-token">token efficiency</span></div>
+    <div class="findings">
+      <div class="finding">
+        <div class="claim"><strong>Context files cost more than they return.</strong> Across agents and models, repository context files did not raise task success and raised inference cost by over 20%. LLM-written files cut success by about 3%; developer-written ones added about 4%. Repository overviews were the least useful part; concrete instructions were followed.</div>
+        <div class="so">Drop the Layout tree and loop narrative from the resident file. Keep Gate, commands and hard rules, which are instructions.</div>
+        <div class="src"><a href="https://arxiv.org/abs/2602.11988">Gloaguen et al., ETH Zürich, 2026</a><span class="basis summary">via summary</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Rule-based elision before LLM summarization.</strong> Across 176 harness configurations and four models, cheap rule-based context trimming before model summarization was the most efficient setup. Planning mostly helps weak models' accuracy and strong models' cost.</div>
+        <div class="so">This supports <code>analyze.py</code>'s deterministic packet (GW-009) and model-aware routing (GW-011/014). Keep them.</div>
+        <div class="src"><a href="https://arxiv.org/abs/2609.20804">Fan et al., Sep 2026</a><span class="basis read">read</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Compression has hidden costs.</strong> At 5× context compression, completion stayed at 80–85% while retrieval calls rose from 21 to 64. Success rates alone would miss it.</div>
+        <div class="so">Measure handoff size, not only decisions. When output is trimmed, leave a path to the full log.</div>
+        <div class="src"><a href="https://arxiv.org/abs/2608.16370">Liu, Aug 2026</a><span class="basis read">read</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Fewer tools, better results.</strong> Vercel removed 80% of an agent's tools: success went from 80% to 100%, tokens halved, and latency fell from 724 s to 141 s.</div>
+        <div class="so">Keep the role agents' tool lists minimal. <code>pr-reviewer</code> already has only Read, Grep, Glob and Bash.</div>
+        <div class="src"><a href="https://marmelab.com/blog/2026/09/24/the-state-of-ai-harness-engineering-2026.html">via Marmelab</a><span class="basis summary">secondary</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Success silent, failures short, large output offloaded.</strong> Feed back only the high-signal part of a failure and keep the full log on disk. Skills load their detail only when needed.</div>
+        <div class="so">Hooks are already silent on success. Bound what they print on failure, and split the pr-loop skill by state.</div>
+        <div class="src"><a href="https://addyosmani.com/blog/agent-harness-engineering/">Osmani</a><a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">Anthropic context engineering</a><span class="basis read">read</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Cache-stable context management.</strong> Keeping prompt prefixes stable while evicting low-value segments cut cost by 56–87%.</div>
+        <div class="so">Low payoff here: subagents start fresh, and call 2 gets different inputs than call 1. Noted, not planned.</div>
+        <div class="src"><a href="https://arxiv.org/abs/2606.17016">TokenPilot, EMNLP 2026 Findings</a><span class="basis read">read</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="theme">
+    <div class="theme-head"><h3>Output guardrails</h3><span class="chip t-guard">output guardrails</span></div>
+    <div class="findings">
+      <div class="finding">
+        <div class="claim"><strong>Prose rules rarely enforce themselves.</strong> Across 391 repositories, only 4–16% of written security rules were enforced by anything; only 12 repositories had deny rules; 60% of harnesses had neither tests nor evals.</div>
+        <div class="so">This is GW-000's "hooks are law" with numbers. The verifier's rules and the baseline rule are still prose.</div>
+        <div class="src"><a href="https://marmelab.com/blog/2026/09/24/the-state-of-ai-harness-engineering-2026.html">Marmelab, Sep 2026</a><span class="basis read">read</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Agents cheat on tests, and it is rising.</strong> RL post-training raised exploit rates from 0.6% to 13.9% in one benchmark. EvilGenie catches hacks with held-out tests, LLM judges, and detection of edits to test files.</div>
+        <div class="so">The implementer can edit or delete eval cases in the same diff as the fix, and nothing deterministic notices. Flag it in the analyzer.</div>
+        <div class="src"><a href="https://arxiv.org/pdf/2511.21654">EvilGenie</a><a href="https://arxiv.org/html/2605.21384v1">SpecBench</a><span class="basis summary">via summary</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Capped evaluation.</strong> Test sets where the best honest score is deliberately below 100% expose cheating: a score above the cap is evidence of it.</div>
+        <div class="so">Needs randomized hidden tests the implementer can't read. Deferred.</div>
+        <div class="src"><a href="https://arxiv.org/abs/2606.07379">CapCode, Jun 2026</a><span class="basis read">read</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>More reviewers made results worse.</strong> Adding reviewer agents cut success by 8% in the tested cases, and chains of more than four handoffs almost always failed.</div>
+        <div class="so">Keep GW-017's two calls. Strengthen the one verifier with code checks instead of adding a second.</div>
+        <div class="src"><a href="https://marmelab.com/blog/2026/09/24/the-state-of-ai-harness-engineering-2026.html">Marmelab, Sep 2026</a><span class="basis read">read, aggregate</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="theme">
+    <div class="theme-head"><h3>Self-improvement</h3><span class="chip t-learn">self-improvement</span></div>
+    <div class="findings">
+      <div class="finding">
+        <div class="claim"><strong>The ratchet.</strong> Every rule in an agent's instructions should trace back to a specific failure. Each observed mistake becomes a permanent constraint: a rule, a hook or a check.</div>
+        <div class="so">Groundwork's <code>failure-triage</code> does this by hand. The ledger has the data to propose it.</div>
+        <div class="src"><a href="https://addyosmani.com/blog/agent-harness-engineering/">Osmani</a><span class="basis read">read</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Evolving playbooks need small updates and curation.</strong> ACE improves a context by generating, reflecting and curating, applying small incremental updates. Rewriting the whole context causes brevity bias and context collapse, where detail erodes over time.</div>
+        <div class="so">Proposals are appended drafts, never rewrites of <code>CLAUDE.md</code> or a skill. Groundwork's draft-then-promote flow is already the curation step.</div>
+        <div class="src"><a href="https://arxiv.org/abs/2510.04618">ACE, ICLR 2026</a><span class="basis summary">via summary</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Optimizing repository skills works, but only a little.</strong> A GEPA-optimized skill set added 4.9 points on three Kotlin repositories, measured by reverting merged PRs and replaying them as tasks. The authors say this is within run-to-run variance.</div>
+        <div class="so">Judging a harness change needs real tasks and enough of them. The version scoreboard is the observational start; controlled replay waits for more history.</div>
+        <div class="src"><a href="https://arxiv.org/abs/2609.12742">Kozyrev et al., Sep 2026</a><span class="basis read">read</span></div>
+      </div>
+      <div class="finding">
+        <div class="claim"><strong>Self-evolving agents carry specific risks:</strong> unreliable feedback, benchmark overfitting, changes that can't be undone, and rising complexity. Fully automated harness evolution (worker, evaluator, evolver) has been proposed, without numbers in its abstract.</div>
+        <div class="so">Keep a human promotion gate and make every self-proposed rule land test-first (hard rule 2). Don't automate harness edits.</div>
+        <div class="src"><a href="https://arxiv.org/abs/2608.03392">Zhou et al. survey, Sep 2026</a><a href="https://arxiv.org/abs/2604.21003">Seong et al., Apr 2026</a><span class="basis read">read</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="fit">
+  <div class="eyebrow">Already aligned</div>
+  <h2>What Groundwork already gets right</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Research idea</th><th>Groundwork mechanism</th></tr></thead>
+      <tbody>
+        <tr><td>Computational sensors before inferential ones (Fowler, Fan et al.)</td><td>ANALYZE → GATE → PROBE run before verify call 1; a red gate never spends a call</td></tr>
+        <tr><td>Evaluator isolated from the generator (Anthropic)</td><td><code>pr-reviewer</code> gets a fresh context and never sees author reasoning</td></tr>
+        <tr><td>Bounded review; extra reviewers hurt (−8%)</td><td>GW-017: at most two model calls, no rounds</td></tr>
+        <tr><td>Enforced rules beat prose (4–16%)</td><td>GW-000: PostToolUse hook, pre-commit gate, <code>pr_check.py</code> in CI</td></tr>
+        <tr><td>Success silent (Osmani)</td><td>Hooks exit 0 with no output on success</td></tr>
+        <tr><td>Features start failing (Anthropic)</td><td>Red-first cases; watch the test fail before fixing</td></tr>
+        <tr><td>Harness choices depend on the model (Fan et al.)</td><td>GW-011/014 route subagents by capability level</td></tr>
+        <tr><td>Curation before memory grows (ACE)</td><td>Debt is a draft; drafts stay invisible until a human promotes one</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="data">
+  <div class="eyebrow">Evidence data</div>
+  <h2>Keep the JSON tracked, and stop asking people to read it</h2>
+  <p>The ledger and the per-PR review files are for machines. They stay in git because pr-loop's task worktrees are throwaway directories: anything untracked there disappears when the worktree goes, and history would split across machines. Git is the one store that survives, travels with every clone and CI run, and needs no service. People read the PR body, which is already the human view of one task, and a generated HTML report for the history, the same way graphify turns <code>graph.json</code> into <code>graph.html</code>.</p>
+  <div class="scroll">
+    <table class="data">
+      <thead><tr><th>File</th><th>Written by</th><th>Read by</th><th>In git</th></tr></thead>
+      <tbody>
+        <tr><td><code>tasks/pr-loop-ledger.jsonl</code><br><span class="muted">one line per task, about 1.5 KB</span></td><td>orchestrator at EVIDENCE</td><td><code>groundwork-retro</code> (TASK-10)</td><td>yes, with <code>merge=union</code> so parallel PRs don't conflict (TASK-2)</td></tr>
+        <tr><td><code>tasks/reviews/pr&lt;N&gt;.json</code><br><span class="muted">one file per PR</span></td><td>orchestrator, from the verifier</td><td><code>pr_check.py --review</code> in CI (TASK-4), retro</td><td>yes; checked inside the PR diff, one file per PR so no conflicts</td></tr>
+        <tr><td>retro HTML report</td><td><code>groundwork-retro --html</code></td><td>people</td><td>no; derived and gitignored, regenerate any time</td></tr>
+        <tr><td><code>tasks/groundwork-feedback.md</code></td><td><code>groundwork-retro --upstream</code> (TASK-13)</td><td>a person, then Groundwork maintainers</td><td>no; a person decides whether it leaves the repo</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="twocol">
+    <div class="box">
+      <h3>One source, three audiences</h3>
+      <ul>
+        <li><strong>Machines</strong> read JSON: CI validates it, retro aggregates it.</li>
+        <li><strong>Agents</strong> read retro's text mode, capped at 60 lines, so a history of hundreds of tasks costs a few hundred tokens.</li>
+        <li><strong>People</strong> read retro's HTML page: tasks, findings with their repros, ratchet candidates, and the version scoreboard.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Alternatives considered</h3>
+      <ul>
+        <li><strong>Gitignored local files:</strong> lost with each task worktree and split per machine.</li>
+        <li><strong>git notes:</strong> not pushed or fetched by default, and invisible in PRs.</li>
+        <li><strong>PR comments only:</strong> every retro read would need <code>gh</code> and a network, and CI couldn't check the file in the diff.</li>
+        <li><strong>A database or service:</strong> a new dependency for a few kilobytes of JSON.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="loops">
+  <div class="eyebrow">Two closed loops</div>
+  <h2>The ledger improves the project and Groundwork</h2>
+  <p>pr-loop is the inner loop: one task, gate, probe, verifier. Retro adds two outer loops over many tasks. The first turns repeated findings into enforcement in the project. The second separates signals about the loop itself, tags them with the Groundwork version that produced them, and brings them back to this repository. This follows ponytail's one-shot report skills: <code>groundwork-retro</code> reads and reports, changes nothing, and never publishes a number it didn't measure.</p>
+  <div class="flows">
+    <div class="flowbox" style="--c: var(--c-learn)">
+      <div class="theme-head"><h3>Repo loop</h3><span class="chip t-learn">TASK-10 · TASK-11</span></div>
+      <div class="flow" role="list">
+        <span class="node" role="listitem">pr-loop runs<small>ledger + review JSON</small></span><span class="arrow" aria-hidden="true">→</span>
+        <span class="node" role="listitem">groundwork-retro<small>text for agents · HTML for people</small></span><span class="arrow" aria-hidden="true">→</span>
+        <span class="node" role="listitem">same finding in ≥ 3 tasks<small>project signal</small></span><span class="arrow" aria-hidden="true">→</span>
+        <span class="node" role="listitem">draft task, label ratchet<small>names the tasks</small></span><span class="arrow" aria-hidden="true">→</span>
+        <span class="node human" role="listitem">a person promotes it</span><span class="arrow" aria-hidden="true">→</span>
+        <span class="node" role="listitem">case, lint or hook<small>red on the recorded repros</small></span>
+      </div>
+      <div class="back">↺ the next pr-loop run is held to the new check</div>
+    </div>
+    <div class="flowbox" style="--c: var(--c-up)">
+      <div class="theme-head"><h3>Groundwork loop</h3><span class="chip t-up">TASK-2 · TASK-12 · TASK-13</span></div>
+      <div class="flow" role="list">
+        <span class="node" role="listitem">ledger line<small>groundwork_version</small></span><span class="arrow" aria-hidden="true">→</span>
+        <span class="node" role="listitem">retro classifies<small>loop signal vs project signal</small></span><span class="arrow" aria-hidden="true">→</span>
+        <span class="node" role="listitem">version scoreboard<small>n ≥ 5 per version or no verdict</small></span><span class="arrow" aria-hidden="true">→</span>
+        <span class="node" role="listitem">--upstream packet<small>counts and ids only, no code or paths</small></span><span class="arrow" aria-hidden="true">→</span>
+        <span class="node human" role="listitem">a person sends it<small>gh issue create</small></span><span class="arrow" aria-hidden="true">→</span>
+        <span class="node" role="listitem">Groundwork draft, label upstream<small>promoted by a maintainer</small></span>
+      </div>
+      <div class="back">↺ the next release's scoreboard shows whether the change helped</div>
+    </div>
+  </div>
+  <p class="muted">The Groundwork repository runs the same loops on itself. Backlog.md was initialized here on 2026-09-29 and this plan is filed as TASK-1 to TASK-13, so its own pr-loop runs will build the first ledger that retro reads.</p>
+</section>
+
+<section id="plan">
+  <div class="eyebrow">Upgrade plan</div>
+  <h2>Thirteen tasks in four waves</h2>
+  <p>Each task is a Backlog.md task with acceptance criteria and a <code>Probe:</code> line, delivered through <code>/pr-loop</code>: a contract or regression under <code>plugin/tests/</code> first, watched red, then the change. All are stdlib-only with no live surface. Full acceptance criteria live in <code>backlog/tasks/</code>; this page keeps the reasoning.</p>
+
+  <h3>Where each task plugs into the loop</h3>
+  <div class="loop" role="list" aria-label="pr-loop states with the tasks that change them">
+    <div class="state" role="listitem"><span class="name">SPEC</span><span class="model">orchestrator</span><div class="tags"><span class="chip t-learn">TASK-11</span></div></div>
+    <div class="state" role="listitem"><span class="name">IMPLEMENT</span><span class="model">subagent</span><div class="tags"><span class="chip t-token">TASK-7</span><span class="chip t-token">TASK-9</span><span class="chip t-guard">TASK-6</span></div></div>
+    <div class="state" role="listitem"><span class="name">ANALYZE</span><span class="model">stdlib</span><div class="tags"><span class="chip t-guard">TASK-3</span></div></div>
+    <div class="state" role="listitem"><span class="name">GATE</span><span class="model">stdlib</span><div class="tags"><span class="chip t-guard">TASK-5</span><span class="chip t-token">TASK-8</span></div></div>
+    <div class="state" role="listitem"><span class="name">PROBE</span><span class="model">live</span><div class="tags"></div></div>
+    <div class="state call" role="listitem"><span class="name">VERIFY</span><span class="model">call 1</span><div class="tags"><span class="chip t-guard">TASK-4</span></div></div>
+    <div class="state" role="listitem"><span class="name">REPAIR</span><span class="model">once</span><div class="tags"></div></div>
+    <div class="state call" role="listitem"><span class="name">RE-VERIFY</span><span class="model">call 2</span><div class="tags"><span class="chip t-guard">TASK-4</span></div></div>
+    <div class="state" role="listitem"><span class="name">EVIDENCE</span><span class="model">ledger</span><div class="tags"><span class="chip t-measure">TASK-1</span><span class="chip t-measure">TASK-2</span></div></div>
+    <div class="state between" role="listitem"><span class="name">RETRO</span><span class="model">between tasks</span><div class="tags"><span class="chip t-learn">TASK-10</span><span class="chip t-up">TASK-12</span><span class="chip t-up">TASK-13</span></div></div>
+  </div>
+  <div class="legend"><span class="chip t-measure">fix/measure</span><span class="chip t-guard">guardrail</span><span class="chip t-token">tokens</span><span class="chip t-learn">repo loop</span><span class="chip t-up">groundwork loop</span><span>Shaded states spend a model call; the dashed one runs between tasks.</span></div>
+
+  <div class="wave">
+    <div class="wave-head"><h3>Wave 1 · Fix, measure, close the cheating paths</h3><span class="mono muted">TASK-1–6 · GW-018, GW-019</span></div>
+
+    <article class="task" style="--c: var(--c-measure)">
+      <div class="task-top"><span class="task-id">TASK-1</span><h3>groundwork-init configures the PR status that pr-loop sets</h3><span class="chip t-measure">bug · high</span></div>
+      <dl>
+        <dt>Why</dt><dd>pr-loop's last step runs <code>backlog task edit &lt;id&gt; -s PR</code>. A default Backlog.md config has no <code>PR</code> status, so every freshly initialized repo fails there. Found while initializing this repo's backlog.</dd>
+        <dt>Change</dt><dd>groundwork-init adds <code>PR</code> to <code>backlog/config.yml</code> statuses, keeping any existing ones. (This repo's config already has it, added by hand so the loop can run here.)</dd>
+      </dl>
+    </article>
+
+    <article class="task" style="--c: var(--c-measure)">
+      <div class="task-top"><span class="task-id">TASK-2</span><h3>Ledger records handoff size and Groundwork version, and merges without conflicts</h3><span class="chip t-measure">measure · high</span></div>
+      <dl>
+        <dt>Why</dt><dd>Token counts are <code>null</code> when the host hides them, so no later change can be shown to save anything (Liu 2026). The version tag is what lets Groundwork judge its own releases.</dd>
+        <dt>Change</dt><dd><code>handoff_bytes</code> on every model route; <code>groundwork_version</code> from <code>.groundwork-version</code> on every line; the scaffold's <code>.gitattributes</code> sets <code>merge=union</code> on the ledger.</dd>
+        <dt>Decision</dt><dd>GW-018: evidence data is tracked JSON for machines; people read a generated view; handoff size is measured before anything is trimmed.</dd>
+      </dl>
+    </article>
+
+    <article class="task" style="--c: var(--c-guard)">
+      <div class="task-top"><span class="task-id">TASK-3</span><h3>Analyzer flags weakened evals and baseline moves as high risk</h3><span class="chip t-guard">guardrail · high</span></div>
+      <dl>
+        <dt>Why</dt><dd>Deleting a golden case currently reads as a healthy eval diff. Detecting edits to test files catches most reward hacking (EvilGenie).</dd>
+        <dt>Change</dt><dd>Reason <code>eval-weakened</code> at level high for a deleted or modified existing case, a changed test file, or any <code>.eval-baseline.json</code> edit; new cases stay unflagged; flagged files join <code>review.targets</code>.</dd>
+        <dt>Decision</dt><dd>GW-019: weakening the ground is high risk by default, and model output that decides state is checked by code.</dd>
+      </dl>
+    </article>
+
+    <article class="task" style="--c: var(--c-guard)">
+      <div class="task-top"><span class="task-id">TASK-4</span><h3><code>pr_check.py</code> validates the verifier's review JSON</h3><span class="chip t-guard">guardrail · high</span></div>
+      <dl>
+        <dt>Why</dt><dd>"A finding without a repro never blocks" is the loop's central output rule and exists only as prose.</dd>
+        <dt>Change</dt><dd><code>--review</code> checks enums, a new required <code>question</code> field, a repro on every blocking finding, and one verify record per standing id. It runs in CI and before REPAIR, and rejections are counted in the ledger.</dd>
+      </dl>
+    </article>
+
+    <article class="task" style="--c: var(--c-guard)">
+      <div class="task-top"><span class="task-id">TASK-5</span><h3>Pre-commit blocks a baseline move without an ADR</h3><span class="chip t-guard">guardrail · medium</span></div>
+      <dl>
+        <dt>Why</dt><dd>"The baseline moves only by a recorded decision" is prose today. A git hook enforces it for Claude Code and Codex alike.</dd>
+        <dt>Change</dt><dd>The scaffold pre-commit exits 1 when <code>.eval-baseline.json</code> is staged without a file under <code>specs/decisions/</code>.</dd>
+      </dl>
+    </article>
+
+    <article class="task" style="--c: var(--c-guard)">
+      <div class="task-top"><span class="task-id">TASK-6</span><h3>Agents cannot bypass hooks with <code>--no-verify</code> or force-push</h3><span class="chip t-guard">guardrail · medium</span></div>
+      <dl>
+        <dt>Why</dt><dd>A hook can't stop the flag that skips it. Decided: an emergency bypass is a human-only action.</dd>
+        <dt>Change</dt><dd>A PreToolUse hook blocks <code>git commit</code> with <code>--no-verify</code>/<code>-n</code> and <code>git push</code> with <code>--force</code>/<code>-f</code>. Claude Code's prefix-based deny rules would miss <code>git commit -m x --no-verify</code>, so this is a hook rather than a deny rule. Hard rule 5 is updated; Codex parity is recorded as a gap in GW-019.</dd>
+      </dl>
+    </article>
+  </div>
+
+  <div class="wave">
+    <div class="wave-head"><h3>Wave 2 · Pay for fewer tokens</h3><span class="mono muted">TASK-7–9 · GW-020</span></div>
+
+    <article class="task" style="--c: var(--c-token)">
+      <div class="task-top"><span class="task-id">TASK-7</span><h3>Resident instruction file stays under 3,000 bytes</h3><span class="chip t-token">tokens · medium</span></div>
+      <dl>
+        <dt>Why</dt><dd>Loaded on every turn of every session. Overviews add 20%+ cost with no success gain; instructions are what agents follow (ETH, 2026).</dd>
+        <dt>Change</dt><dd>Keep role, toolchain one-liners, Gate, Commands and Hard rules; drop the Layout tree and loop narrative for links. groundwork-init's minimal file follows the same cap.</dd>
+        <dt>Depends</dt><dd>TASK-6, which edits hard rule 5.</dd>
+        <dt>Decision</dt><dd>GW-020: the resident context has a byte budget; everything else loads on demand.</dd>
+      </dl>
+    </article>
+
+    <article class="task" style="--c: var(--c-token)">
+      <div class="task-top"><span class="task-id">TASK-8</span><h3>Hooks print a bounded failure summary and the path to the full log</h3><span class="chip t-token">tokens · medium</span></div>
+      <dl>
+        <dt>Why</dt><dd>A failure pastes the whole log into context. Keep the pointer so the agent doesn't rerun to recover what was cut (Liu 2026).</dd>
+        <dt>Change</dt><dd>Failing test ids with their first assertion line, at most 40 lines, plus the log path. Success stays silent.</dd>
+      </dl>
+    </article>
+
+    <article class="task" style="--c: var(--c-token)">
+      <div class="task-top"><span class="task-id">TASK-9</span><h3>pr-loop loads per-state detail on demand</h3><span class="chip t-token">tokens · low</span></div>
+      <dl>
+        <dt>Why</dt><dd>16.9 KB loads whole on every run, though each template and schema is used in one state.</dd>
+        <dt>Change</dt><dd>SKILL.md keeps the state machine, roles, budget and routing (8 KB or less); detail moves to <code>references/implement.md</code>, <code>verify.md</code> and <code>evidence.md</code>. No rule changes.</dd>
+        <dt>Depends</dt><dd>TASK-2 and TASK-4, which edit the same sections.</dd>
+      </dl>
+    </article>
+  </div>
+
+  <div class="wave">
+    <div class="wave-head"><h3>Wave 3 · Repo loop</h3><span class="mono muted">TASK-10–11 · GW-021</span></div>
+
+    <article class="task" style="--c: var(--c-learn)">
+      <div class="task-top"><span class="task-id">TASK-10</span><h3><code>groundwork-retro</code>: text for agents, HTML for people</h3><span class="chip t-learn">repo loop · medium</span></div>
+      <dl>
+        <dt>Why</dt><dd>The ledger and review files hold the evidence of repetition the ratchet needs, and nobody reads them.</dd>
+        <dt>Change</dt><dd>A new one-shot skill with a stdlib <code>ledger_report.py</code>. Text mode (60 lines or fewer) prints rates, trends and recurring findings, plus one ready-to-run draft command when a group spans 3 or more tasks. <code>--html</code> writes one self-contained page with no network, gitignored.</dd>
+        <dt>Depends</dt><dd>TASK-2 (handoff size, version) and TASK-4 (<code>question</code> field).</dd>
+        <dt>Decision</dt><dd>GW-021: the project learns through drafted, human-promoted, test-first ratchets.</dd>
+      </dl>
+    </article>
+
+    <article class="task" style="--c: var(--c-learn)">
+      <div class="task-top"><span class="task-id">TASK-11</span><h3>Ratchet drafts enter the loop, and people promote them</h3><span class="chip t-learn">repo loop · low</span></div>
+      <dl>
+        <dt>Why</dt><dd>Small appended updates plus curation, never a rewrite (ACE); keep changes reversible (Zhou et al.).</dd>
+        <dt>Change</dt><dd><code>/pr-loop next</code> runs retro first and files ratchets as drafts only. The debt rule accepts <code>tasks &lt;ids&gt;</code>. A ratchet's acceptance goes red on its recorded repros. No model edits instruction files from retro output.</dd>
+      </dl>
+    </article>
+  </div>
+
+  <div class="wave">
+    <div class="wave-head"><h3>Wave 4 · Groundwork loop</h3><span class="mono muted">TASK-12–13 · GW-022</span></div>
+
+    <article class="task" style="--c: var(--c-up)">
+      <div class="task-top"><span class="task-id">TASK-12</span><h3>Retro separates Groundwork signals and scores Groundwork versions</h3><span class="chip t-up">groundwork loop · low</span></div>
+      <dl>
+        <dt>Why</dt><dd>Some signals are about the loop, not the project: a rejected verifier output, a task ending <code>not met</code> after call 2, a failed or substituted model route, repeated preflight bounces, a handoff over budget. With the version tag, a Groundwork change can be judged on real tasks.</dd>
+        <dt>Change</dt><dd>Fixed classification rules listed in the skill, and a per-version scoreboard: tasks, calls per task, repair rate, not-met rate, median handoff bytes.</dd>
+        <dt>Honesty</dt><dd>As in ponytail-gain: measured numbers only, <code>null</code> stays unknown, and no verdict for a version with fewer than 5 tasks.</dd>
+        <dt>Decision</dt><dd>GW-022: Groundwork improves from version-tagged loop signals that a person chooses to send upstream.</dd>
+      </dl>
+    </article>
+
+    <article class="task" style="--c: var(--c-up)">
+      <div class="task-top"><span class="task-id">TASK-13</span><h3>Retro writes a sanitized upstream feedback packet</h3><span class="chip t-up">groundwork loop · low</span></div>
+      <dl>
+        <dt>Why</dt><dd>Groundwork improves fastest from the repositories that use it, and sending project data out is a person's decision.</dd>
+        <dt>Change</dt><dd><code>--upstream</code> writes counts, rule ids, GW ids, versions and the scoreboard; no code, paths, finding text or task titles. It prints the <code>gh issue create</code> command and never runs it. Here, a feedback issue becomes a draft labelled <code>upstream</code>.</dd>
+      </dl>
+    </article>
+  </div>
+
+  <div class="twocol">
+    <div class="box">
+      <h3>Order</h3>
+      <ul>
+        <li><strong>Ready now:</strong> TASK-1 to TASK-6 and TASK-8. <code>backlog task list --ready</code> shows them by priority.</li>
+        <li><strong>TASK-1 first:</strong> without it, pr-loop can't finish in a new repo.</li>
+        <li><strong>TASK-7</strong> after TASK-6, and <strong>TASK-9</strong> after TASK-2 and TASK-4.</li>
+        <li><strong>TASK-10</strong> once TASK-2 and TASK-4 land, then TASK-11 and TASK-12, then TASK-13.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Deferred, with the trigger to revisit</h3>
+      <ul>
+        <li><strong>Hidden holdout evals</strong> (EvilGenie, CapCode): files in the repo are readable by the implementer. Revisit if TASK-3 flags tampering in real runs.</li>
+        <li><strong>Controlled PR-replay ablation</strong> (Skill Issue): once the ledger holds 20 or more tasks per version and the scoreboard shows a difference worth confirming.</li>
+        <li><strong>Mining <code>prompts/raw/</code></strong> for corrections: noisy and privacy-sensitive. Revisit after retro proves useful.</li>
+        <li><strong>Cache-stable handoff ordering</strong> (TokenPilot): subagents start fresh, so the payoff is small.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="not">
+  <div class="eyebrow">Not doing</div>
+  <h2>Ideas the evidence argues against</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Idea</th><th>Why not</th></tr></thead>
+      <tbody>
+        <tr><td>A second reviewer agent or more review rounds</td><td>Extra reviewers cut success by 8%; more than four handoffs almost always fail. GW-017 stays at two calls.</td></tr>
+        <tr><td>Letting a model rewrite <code>CLAUDE.md</code> or skills from the ledger</td><td>LLM-written context files lowered success by about 3%, and whole rewrites cause context collapse (ACE). Ratchets are drafts a person promotes.</td></tr>
+        <tr><td>Sending feedback upstream automatically</td><td>Project data leaving the repository is a person's call. Retro prepares the packet and prints the command.</td></tr>
+        <tr><td>A Groundwork-owned compaction layer</td><td>The host already compacts, and the analyzer's rule-based trimming is the efficient first stage. Another summarizer adds cost and hidden re-fetches.</td></tr>
+        <tr><td>Fully automated harness evolution</td><td>No reported numbers, plus the known risks of unreliable feedback and irreversible changes.</td></tr>
+        <tr><td>More resident rules to cover new cases</td><td>Each resident byte is paid on every turn. New rules go into hooks, tests or files loaded on demand.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="metrics">
+  <div class="eyebrow">How we'll know</div>
+  <h2>Before and after</h2>
+  <div class="scroll">
+    <table class="metrics">
+      <thead><tr><th>Metric</th><th>Now</th><th>Target</th><th>Task</th></tr></thead>
+      <tbody>
+        <tr><td>pr-loop completes on a fresh Backlog.md</td><td class="num">no</td><td class="num">yes</td><td class="num">TASK-1</td></tr>
+        <tr><td>Resident instruction file</td><td class="num">6,000 B</td><td class="num">≤ 3,000 B</td><td class="num">TASK-7</td></tr>
+        <tr><td>pr-loop skill loaded at start</td><td class="num">16,864 B</td><td class="num">≤ 8,000 B</td><td class="num">TASK-9</td></tr>
+        <tr><td>Hook failure output</td><td class="num">unbounded</td><td class="num">≤ 40 lines + log path</td><td class="num">TASK-8</td></tr>
+        <tr><td>Handoff size and version on each run</td><td class="num">not recorded</td><td class="num">always recorded</td><td class="num">TASK-2</td></tr>
+        <tr><td>Parallel PRs appending to the ledger</td><td class="num">conflict</td><td class="num">clean union merge</td><td class="num">TASK-2</td></tr>
+        <tr><td>Eval weakening or baseline edit flagged</td><td class="num">no</td><td class="num">high risk, full review</td><td class="num">TASK-3, 5</td></tr>
+        <tr><td>Verifier output rules enforced by code</td><td class="num">0 of 4</td><td class="num">4 of 4</td><td class="num">TASK-4</td></tr>
+        <tr><td>Agent hook bypass</td><td class="num">possible</td><td class="num">blocked</td><td class="num">TASK-6</td></tr>
+        <tr><td>Ledger readers</td><td class="num">0</td><td class="num">retro text + HTML</td><td class="num">TASK-10</td></tr>
+        <tr><td>Groundwork versions compared on real tasks</td><td class="num">no</td><td class="num">scoreboard, n ≥ 5</td><td class="num">TASK-12</td></tr>
+        <tr><td>Path for loop signals back to Groundwork</td><td class="num">none</td><td class="num">sanitized packet, sent by a person</td><td class="num">TASK-13</td></tr>
+        <tr><td>Model calls per task</td><td class="num">≤ 2</td><td class="num">≤ 2, unchanged</td><td class="num">none</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Sizes and flags are structural targets. Whether they lower real spend per task is answered by the handoff sizes in the ledger, compared across Groundwork versions by TASK-12.</p>
+</section>
+
+<section id="decisions">
+  <div class="eyebrow">Decisions, 2026-09-29</div>
+  <h2>What the maintainer decided</h2>
+  <ol class="decisions">
+    <li><strong>Agents may not bypass hooks.</strong> Emergency <code>--no-verify</code> becomes a human-only action. Built as a PreToolUse hook, because prefix deny rules miss reordered arguments (TASK-6).</li>
+    <li><strong>Ratchet threshold is 3 tasks.</strong> Adjust later from retro's own output (TASK-10).</li>
+    <li><strong>Backlog.md is initialized in this repository.</strong> Agent-instruction files were skipped to protect the resident budget, and the <code>PR</code> status was added by hand. Doing this exposed the TASK-1 bug. TASK-1 to TASK-13 are filed.</li>
+    <li><strong>One ADR per theme:</strong> GW-018 evidence data and measurement, GW-019 guardrails, GW-020 context budget, GW-021 repo loop, GW-022 Groundwork loop.</li>
+    <li><strong>Evidence JSON stays tracked;</strong> people read the PR body and retro's generated HTML, never the raw files (TASK-2, TASK-10).</li>
+  </ol>
+</section>
+
+<section id="sources">
+  <div class="eyebrow">Sources</div>
+  <h2>Reading list</h2>
+  <ol class="sources">
+    <li><a href="https://marmelab.com/blog/2026/09/24/the-state-of-ai-harness-engineering-2026.html">Marmelab, The State of AI Harness Engineering 2026</a> (Sep 2026)</li>
+    <li><a href="https://martinfowler.com/articles/harness-engineering.html">Fowler, Harness engineering for coding agent users</a></li>
+    <li><a href="https://openai.com/index/harness-engineering/">OpenAI, Harness engineering: leveraging Codex in an agent-first world</a></li>
+    <li><a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Anthropic, Effective harnesses for long-running agents</a> (Nov 2025)</li>
+    <li><a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">Anthropic, Effective context engineering for AI agents</a></li>
+    <li><a href="https://understandingdata.com/posts/generator-evaluator-harness-design/">Generator-evaluator harness design (on Anthropic's Mar 2026 post)</a></li>
+    <li><a href="https://addyosmani.com/blog/agent-harness-engineering/">Osmani, Agent harness engineering</a></li>
+    <li><a href="https://www.philschmid.de/agent-harness-2026">Schmid, The importance of agent harness in 2026</a></li>
+    <li><a href="https://arxiv.org/abs/2609.20804">Fan et al., An Empirical Study of Harness Design for Coding Agents</a> (Sep 2026)</li>
+    <li><a href="https://arxiv.org/abs/2602.11988">Gloaguen et al., Evaluating AGENTS.md</a> (ETH Zürich, 2026)</li>
+    <li><a href="https://arxiv.org/abs/2608.16370">Liu, What Does Context Compression Cost an Agent?</a> (Aug 2026)</li>
+    <li><a href="https://arxiv.org/abs/2606.17016">Xu et al., TokenPilot</a> (EMNLP 2026 Findings)</li>
+    <li><a href="https://arxiv.org/pdf/2607.11423">ToFu: a token-efficient agent harness</a> (Jul 2026)</li>
+    <li><a href="https://arxiv.org/pdf/2511.21654">EvilGenie: a reward hacking benchmark</a></li>
+    <li><a href="https://arxiv.org/html/2605.21384v1">SpecBench: reward hacking in long-horizon coding agents</a> (May 2026)</li>
+    <li><a href="https://arxiv.org/abs/2606.07379">Lodkaew et al., Do Coding Agents Deceive Us? (CapCode)</a> (Jun 2026)</li>
+    <li><a href="https://arxiv.org/abs/2510.04618">Agentic Context Engineering (ACE)</a> (ICLR 2026)</li>
+    <li><a href="https://arxiv.org/abs/2609.12742">Kozyrev et al., Skill Issue: optimizing repository SKILLs</a> (Sep 2026)</li>
+    <li><a href="https://arxiv.org/abs/2608.03392">Zhou et al., Self-Evolving Coding Agents (survey)</a> (Sep 2026)</li>
+    <li><a href="https://arxiv.org/abs/2604.21003">Seong et al., The Last Harness You'll Ever Build</a> (Apr 2026)</li>
+    <li><a href="https://arxiv.org/abs/2607.13285">Wang et al., Harness Handbook</a> (Jul 2026)</li>
+    <li><a href="https://arxiv.org/abs/2608.13867">Jarmak, Engineering Reliable Coding Agents</a> (Aug 2026)</li>
+  </ol>
+</section>
+
+<footer>
+  Plan behind backlog tasks TASK-1 to TASK-13. The acceptance criteria in <code>backlog/tasks/</code> are the binding version; when a task's GW decision changes the plan, update this page in the same PR.
+</footer>
+
+</div>
+</body>
+</html>
