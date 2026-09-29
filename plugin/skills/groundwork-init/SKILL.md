@@ -34,6 +34,11 @@ files. No network is needed.
    `python3 <this-skill-dir>/scripts/migrate_todo.py tasks/TODO.md` (prints
    the `backlog task create` commands; add `--run` to execute them), then
    deletes `tasks/TODO.md` and `tasks/DONE.md` — history keeps them.
+   Then, whether or not the config already existed, make `backlog/config.yml`
+   `statuses` carry `PR` (pr-loop ends with `backlog task edit <id> -s PR`, and
+   the defaults lack it): insert `PR` between In Progress and Done. Additive —
+   keeps every existing status in order and adds `PR` once (no change if it is
+   already listed).
 
 3. **Gate.** Use the host's project instruction file: `AGENTS.md` on Codex,
    `CLAUDE.md` on Claude Code. If it is absent, create a minimal one; if its
@@ -96,7 +101,8 @@ A repo that adopted groundwork while pr-loop still read `tasks/TODO.md`
 branch, additively, in this order. Say "upgrade groundwork" to run it.
 
 1. **Task store.** `backlog init --defaults` (or `npx -y backlog.md init
-   --defaults`) if `backlog/config.yml` is missing. Then migrate the open
+   --defaults`) if `backlog/config.yml` is missing, and add the `PR` status as
+   in the greenfield step 2. Then migrate the open
    blocks: `BACKLOG="npx -y backlog.md" python3
    <this-skill-dir>/scripts/migrate_todo.py tasks/TODO.md --run`. Queue
    `[status: todo]` blocks become tasks, Debt blocks become drafts, old ids

@@ -124,3 +124,24 @@ class DecisionRecordTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PrStatusConfiguredTests(unittest.TestCase):
+    """TASK-1: pr-loop sets status PR, so groundwork-init must configure it."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.loop = (SKILL_DIR / "SKILL.md").read_text()
+        cls.init = (PLUGIN / "skills" / "groundwork-init" / "SKILL.md").read_text()
+        cls.step = re.search(r"\n2\. \*\*Task store\.\*\*.*?\n\n3\. ", cls.init, re.S).group(0)
+
+    def test_init_task_store_step_adds_pr_status_additively(self):
+        self.assertIn("backlog/config.yml", self.step)
+        self.assertIn("`PR`", self.step)
+        self.assertIn("between In Progress and Done", self.step)
+        self.assertIn("keeps", self.step)
+        self.assertIn("once", self.step)
+
+    def test_loop_and_init_name_the_same_status(self):
+        status = re.search(r"backlog task edit <id> -s (\S+?)`", self.loop).group(1)
+        self.assertIn(f"`{status}`", self.step)
