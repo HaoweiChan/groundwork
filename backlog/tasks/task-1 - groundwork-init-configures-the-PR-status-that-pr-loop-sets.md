@@ -1,9 +1,10 @@
 ---
 id: TASK-1
 title: groundwork-init configures the PR status that pr-loop sets
-status: To Do
+status: PR
 assignee: []
 created_date: '2026-09-29 15:56'
+updated_date: '2026-09-29 16:18'
 labels:
   - bug
   - init
